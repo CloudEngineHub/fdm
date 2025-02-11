@@ -4,12 +4,26 @@ repos:
     hooks:
       - id: black
         args: ["--line-length", "120", "--unstable"]
+        # Use Python 3.8 for files in ros/, otherwise use Python 3.10
+        language_version: python3.8
+        files: ^ros/
+      - id: black
+        args: ["--line-length", "120", "--unstable"]
+        # language_version: python3.10
+        exclude: ^ros/
+
   - repo: https://github.com/pycqa/flake8
     rev: 7.0.0
     hooks:
       - id: flake8
         additional_dependencies: [flake8-simplify, flake8-return]
-        # exclude: ^(ros)
+        language_version: python3.8
+        files: ^ros/
+      - id: flake8
+        additional_dependencies: [flake8-simplify, flake8-return]
+        # language_version: python3.10
+        exclude: ^ros/
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
@@ -27,17 +41,31 @@ repos:
       - id: check-shebang-scripts-are-executable
       - id: detect-private-key
       - id: debug-statements
+
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
-        name: isort (python)
         args: ["--profile", "black", "--filter-files"]
+        language_version: python3.8
+        files: ^ros/
+      - id: isort
+        args: ["--profile", "black", "--filter-files"]
+        # language_version: python3.10
+        exclude: ^ros/
+
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.15.1
     hooks:
       - id: pyupgrade
+        args: ["--py38-plus"]
+        language_version: python3.8
+        files: ^ros/
+      - id: pyupgrade
         args: ["--py310-plus"]
+        # language_version: python3.10
+        exclude: ^ros/
+
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.6
     hooks:
@@ -45,6 +73,7 @@ repos:
         additional_dependencies:
         - tomli
         # exclude: ^(ros)
+  
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.1
     hooks:
@@ -56,7 +85,7 @@ repos:
           - --license-filepath
           - .github/LICENSE_HEADER.txt
           - --use-current-year
-        exclude: "source/isaaclab_mimic/|scripts/imitation_learning/isaaclab_mimic/"
+        
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.1
     hooks:

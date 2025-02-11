@@ -1,0 +1,104 @@
+[tool.isort]
+
+py_version = 310
+line_length = 120
+group_by_package = true
+
+# Files to skip
+skip_glob = ["docs/*", "logs/*", "_isaac_sim/*", ".vscode/*"]
+
+# Order of imports
+sections = [
+    "FUTURE",
+    "STDLIB",
+    "THIRDPARTY",
+    "ISAACLAB_THIRDPARTY",
+    "NAVSUITE_THIRDPARTY",
+    "FIRSTPARTY",
+    "LOCALFOLDER",
+]
+
+# Extra standard libraries considered as part of python (permissive licenses)
+extra_standard_library = [
+    "numpy",
+    "h5py",
+    "open3d",
+    "torch",
+    "tensordict",
+    "bpy",
+    "matplotlib",
+    "gymnasium",
+    "gym",
+    "scipy",
+    "hid",
+    "yaml",
+    "prettytable",
+    "toml",
+    "trimesh",
+    "tqdm",
+    "torchvision",
+    "transformers",
+    "einops" # Needed for transformers, doesn't always auto-install
+]
+# Imports from Isaac Sim and Omniverse
+known_third_party = [
+    "omni.isaac.core",
+    "omni.replicator.isaac",
+    "omni.replicator.core",
+    "pxr",
+    "omni.kit.*",
+    "warp",
+    "carb",
+    "Semantics",
+]
+# Imports from isaaclab
+known_isaaclab_thirdparty = [
+    "omni.isaac.lab",
+    "omni.isaac.lab_assets",
+    "omni.isaac.lab_tasks",
+]
+# Imports from Nav Suite
+known_navsuite_thirdparty = [
+    "nav_collectors",
+    "nav_importers",
+    "nav_tasks",
+]
+# Imports from this repository
+known_first_party = [
+    "fdm_navigation",
+    "fdm"
+]
+# Imports from the local folder
+known_local_folder = "config"
+
+[tool.pyright]
+
+include = ["source", "scripts"]
+exclude = [
+    "**/__pycache__",
+    "**/_isaac_lab",
+    "**/docs",
+    "**/logs",
+    ".git",
+    ".vscode",
+]
+
+typeCheckingMode = "basic"
+pythonVersion = "3.10"
+pythonPlatform = "Linux"
+enableTypeIgnoreComments = true
+
+# This is required as the CI pre-commit does not download the module (i.e. numpy, torch, prettytable)
+# Therefore, we have to ignore missing imports
+reportMissingImports = "none"
+
+reportGeneralTypeIssues = "none"       # -> raises 218 errors (usage of literal MISSING in dataclasses)
+reportOptionalMemberAccess = "warning" # -> raises 8 errors
+reportPrivateUsage = "warning"
+
+
+[tool.codespell]
+skip = '*.usd,*.svg,*.png,_isaac_sim*,*.bib,*.css,*/_build'
+quiet-level = 0
+# the world list should always have words in lower case
+ignore-words-list = "haa,slq,collapsable,buss"

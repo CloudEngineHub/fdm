@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package>
+    <name>fdm_navigation_ros</name>
+    <version>0.0.0</version>
+    <description>The fdm_navigation_ros package</description>
+    <maintainer email="rothpa@ethz.ch">Pascal Roth</maintainer>
+    <license>BSD 3</license>
+    <buildtool_depend>catkin</buildtool_depend>
+    <build_depend>dynamic_reconfigure</build_depend>
+    <build_depend>rospy</build_depend>
+    <build_depend>series_elastic_actuator_msgs</build_depend>
+    <build_depend>anymal_msgs</build_depend>
+    <run_depend>dynamic_reconfigure</run_depend>
+    <run_depend>rospy</run_depend>
+    <export>
+    </export>
+</package>

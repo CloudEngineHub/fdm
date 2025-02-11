@@ -1,0 +1,8 @@
+<launch>
+    <!-- Arguments -->
+    <rosparam command="load" file="$(find fdm_navigation_ros)/config/default.yaml" ns="planner_node"/>
+
+    <!-- Launch node -->
+    <node name="planner_node" pkg="fdm_navigation_ros" type="planner_node.py" output="screen"></node>
+
+</launch>

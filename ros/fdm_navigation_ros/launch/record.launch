@@ -1,0 +1,5 @@
+<launch>
+
+    <node pkg="rosbag" type="record" name="rosbag_record" args="record -o $(find fdm_navigation_ros)/bag/ /tf /tf_static /wide_angle_camera_front/camera_info /wide_angle_camera_front/image_raw/compressed /state_estimator/odometry /lidar/point_cloud /anymal_low_level_controller/actuator_readings /state_estimator/anymal_state /elevation_mapping/elevation_map_raw /mp_waypoint /path_planning_and_following/twist /planner_node/path /planner_node/optimized_path_topic /planner_node/projected_goal /planner_node/height_map_debug_cb /planner_node/lookahead_twist_topic" />
+
+</launch>

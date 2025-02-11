@@ -1,14 +1,19 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from dataclasses import dataclass
+from typing import List, Optional, Tuple
 
 
 @dataclass
 class ActionCfg:
     action_dim: int  # e.g. action_dim = 3 -> (x_vel, y_vel, yaw_vel)
     traj_dim: int  # Trajectory/Path length
-    lower_bound: list[float]  # Units: forward - m/s, lateral - m/s, rad/s
-    upper_bound: list[float]  # Units: forward - m/s, lateral - m/s, rad/s
+    lower_bound: List[float]  # Units: forward - m/s, lateral - m/s, rad/s
+    upper_bound: List[float]  # Units: forward - m/s, lateral - m/s, rad/s
 
 
 @dataclass
@@ -21,7 +26,7 @@ class CEMCfg:
     # CEM specific
     clipped_normal: bool = False  # ONLY CEM
     # ICEM specific
-    population_size_module: int | None = None  # ONLY ICEM
+    population_size_module: Optional[int] = None  # ONLY ICEM
     population_decay_factor: float = 1.0
     colored_noise_exponent: float = 1.0
     colored_noise_exponent_inital: float = 1.0
@@ -45,15 +50,15 @@ class MPPICfg:
 class TrajectoryOptimizerCfg:
     dt: float = 0.1
     n_step_fwd: bool = True
-    control: str = "position_control"
+    control: str = "velocity_control"
     init_debug: bool = True
 
     # Can be modified via dynamic reconfigure
     replan_every_n: int = 1
     debug: bool = False
     set_actions_below_threshold_to_0: bool = True
-    vel_limit_lin: float = 0.1
-    vel_limit_ang: float = 0.1
+    vel_lin_min: float = 0.1
+    vel_ang_min: float = 0.1
 
     state_cost_w_action_rot: float = 1.0
     state_cost_w_action_trans_forward: float = 1.0
@@ -72,6 +77,9 @@ class TrajectoryOptimizerCfg:
     state_cost_early_goal_distance_offset: float = 0.3
     state_cost_early_goal_heading_offset: float = 0.3
 
+    state_cost_w_early_stopping: float = 1.0
+
+    # TODO optionally add forward velocity tracking instead of just norm
     state_cost_velocity_tracking: float = 1.0
     state_cost_desired_velocity: float = 1.0  # m/s
 
@@ -105,11 +113,14 @@ class TrajectoryOptimizerCfg:
     pp_risky_value: float = 0.5
     pp_fatal_value: float = 1.0
 
+    gridmap_info: Tuple[float, int, int] = (0.04, 200, 200)  # resolution, height, width
+    enable_timing: bool = False
+
 
 @dataclass
 class RobotCfg:
     # Point
-    resolution: float = 0.04
+    resolution: int = 0.04
     # fatal = [
     #     ((0.01, 0.01), (0.015, 0.015)),  # Point
     # ]
@@ -121,19 +132,20 @@ class RobotCfg:
     # ]
 
     # Rectangle Definitions for ANYmal D / hand measured by Jonas
-    fatal = [
-        ((-0.43, -0.235), (0.43, 0.235)),  # BODY
-        ((0.43, -0.265), (0.63, 0.265)),  # Top Drive Area
-        ((0.63, -0.125), (0.65, 0.125)),  # Top Face
-        ((-0.63, -0.265), (-0.43, 0.265)),  # Bottom Drive Area
-        ((-0.65, -0.125), (-0.63, 0.125)),  # Bottom Face
-    ]
+    # fatal = [
+    #     ((-0.43, -0.235), (0.43, 0.235)),  # BODY
+    #     ((0.43, -0.265), (0.63, 0.265)),  # Top Drive Area
+    #     ((0.63, -0.125), (0.65, 0.125)),  # Top Face
+    #     ((-0.63, -0.265), (-0.43, 0.265)),  # Bottom Drive Area
+    #     ((-0.65, -0.125), (-0.63, 0.125)),  # Bottom Face
+    # ]
 
     # fatal = [
     #     ((-0.50, -0.2), (0.50, 0.2)),  # BODY is a small square
     # ]
-    # fatal = [
-    #     ((-0.45, -0.2), (0.45, 0.2)),  # Small BODY
-    # ]
+
+    fatal = [
+        ((-0.52, -0.22), (0.52, 0.22)),  # Small BODY
+    ]
     risky = [((-0.70, -0.58), (0.70, 0.58))]
     cautious = [((-0.80, -0.68), (0.80, 0.68))]

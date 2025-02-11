@@ -1,0 +1,49 @@
+debug: True
+verbose: False
+path_topic: ~path
+optimized_path_topic: ~optimized_path_topic
+twist_topic: ~twist # /motion_reference/command_twist #
+smooth_twist_topic: ~smooth_twist  # /motion_reference/command_twist # ~smooth_twist
+lookahead_twist_topic: /path_planning_and_following/twist # /motion_reference/command_twist # ~lookahead_twist
+projected_goal_topic: ~projected_goal
+
+# topics to construct the observation space
+joint_actions_topic: /anymal_low_level_controller/actuator_readings
+state_estimator_topic: /state_estimator/anymal_state
+gridmap_topic: /elevation_mapping/elevation_map_raw
+gridmap_layer: elevation
+goal_topic:  /mp_waypoint
+
+# model path
+# model_path: /root/git/models/Dec03_20-27-43_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_Noise_reducedObs_Occlusion_NoTorque_NewHeightScanNoise_NewNNTrainNoise_SchedEp10_Wait4_Decay5e5
+# model_path: /root/git/models/Nov19_22-48-29_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_Noise_reducedObs_Occlusion_NoEarlyCollFilter_NoTorque_NewHeightScanNoise/
+# model_path: /home/pascal/orbit/IsaacLab/logs/fdm/fdm_se2_prediction_depth/Nov19_22-48-29_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_Noise_reducedObs_Occlusion_NoEarlyCollFilter_NoTorque_NewHeightScanNoise
+model_path: /home/pascal/orbit/IsaacLab/logs/fdm/fdm_se2_prediction_depth/Nov19_20-56-45_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_reducedObs_Occlusion_NoEarlyCollFilter_NoTorque
+# model_path: /home/pascal/orbit/IsaacLab/logs/fdm/fdm_se2_prediction_depth/Dec03_20-27-43_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_Noise_reducedObs_Occlusion_NoTorque_NewHeightScanNoise_NewNNTrainNoise_SchedEp10_Wait4_Decay5e5
+
+remove_torque: True
+
+replan_frequency: 10
+
+base: base
+odom: odom
+map: map
+
+# options to change the planned paths
+restricted_forward_motion_range: [-0.1, 0.5]
+restricted_sideward_motion_range: [-0.1, 0.1]
+# restricted_rotation_range: [-0.33, 0.33]
+height_scan_dilution: False  # True
+
+use_dynamic_reconfigure: False
+invert_twist: False
+publish_twist: True
+spline_smooth_n: 3
+lookahead_n: 2
+do_not_publish_if_reached: True
+do_not_publish_distance_offset: 0.5
+do_not_publish_heading_offset: 2.0
+
+# adjustments for plots
+add_path_to_plan: False
+predict_path_without_plan: False
