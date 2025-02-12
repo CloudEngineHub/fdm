@@ -12,6 +12,9 @@
 # isaaclab link
 _isaac_lab
 
+# terrains and collected samples
+exts/fdm/data/Terrains/
+
 # Python
 .DS_Store
 **/*.egg-info/
@@ -40,5 +43,3 @@ docker/.container.cfg
 **/.neptune/*
 docker/artifacts/
 *.tmp
-
-

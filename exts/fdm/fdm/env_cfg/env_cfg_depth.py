@@ -1,4 +1,8 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
@@ -11,7 +15,6 @@ from omni.isaac.lab.utils import configclass
 import fdm.mdp as mdp
 
 from .env_cfg_base import FDMCfg, TerrainSceneCfg
-from .env_cfg_base_perceptive import PerceptiveFDMCfg, PerceptiveTerrainSceneCfg
 
 ##
 # Scene definition
@@ -106,15 +109,6 @@ class DepthTerrainSceneCfg(TerrainSceneCfg):
         modify_scene_cfg(self)
 
 
-@configclass
-class PerceptiveDepthTerrainSceneCfg(PerceptiveTerrainSceneCfg):
-    """Configuration for the terrain scene with a legged robot and perceptive locomotion policy."""
-
-    def __post_init__(self):
-        super().__post_init__()
-        modify_scene_cfg(self)
-
-
 ##
 # MDP settings
 ##
@@ -148,22 +142,22 @@ class ObsExteroceptiveCfg(ObsGroup):
 class ObsExteroceptiveHeightScanCfg(ObsGroup):
     # Collect Height Scan Data from the foots
     foot_scan_lf = ObsTerm(
-        func=mdp.height_scan,
+        func=mdp.height_scan_bounded,
         params={"sensor_cfg": SceneEntityCfg("foot_scanner_lf"), "offset": 0.05},
         scale=10.0,
     )
     foot_scan_rf = ObsTerm(
-        func=mdp.height_scan,
+        func=mdp.height_scan_bounded,
         params={"sensor_cfg": SceneEntityCfg("foot_scanner_rf"), "offset": 0.05},
         scale=10.0,
     )
     foot_scan_lh = ObsTerm(
-        func=mdp.height_scan,
+        func=mdp.height_scan_bounded,
         params={"sensor_cfg": SceneEntityCfg("foot_scanner_lh"), "offset": 0.05},
         scale=10.0,
     )
     foot_scan_rh = ObsTerm(
-        func=mdp.height_scan,
+        func=mdp.height_scan_bounded,
         params={"sensor_cfg": SceneEntityCfg("foot_scanner_rh"), "offset": 0.05},
         scale=10.0,
     )
@@ -189,34 +183,16 @@ class FDMDepthCfg(FDMCfg):
 
         # adjust exteroceptive observations
         self.observations.fdm_obs_exteroceptive = ObsExteroceptiveCfg()
-
-
-@configclass
-class PerceptiveFDMDepthCfg(PerceptiveFDMCfg):
-    """Configuration for the locomotion velocity-tracking environment with perceptive locomotion policy."""
-
-    # Scene settings
-    scene: PerceptiveDepthTerrainSceneCfg = PerceptiveDepthTerrainSceneCfg(
-        num_envs=4096, env_spacing=2.5, replicate_physics=False
-    )
-
-    def __post_init__(self):
-        super().__post_init__()
-
-        # adjust exteroceptive observations
-        self.observations.fdm_obs_exteroceptive = ObsExteroceptiveCfg()
         # add extra exteroceptive observations of the foot surroundings
         self.observations.fdm_add_obs_exteroceptive = ObsExteroceptiveHeightScanCfg()
 
 
 @configclass
-class PreTrainingPerceptiveFDMDepthCfg(PerceptiveFDMDepthCfg):
+class PreTrainingFDMDepthCfg(FDMDepthCfg):
     """Configuration for the locomotion velocity-tracking environment with perceptive locomotion policy."""
 
     # Scene settings
-    scene: PerceptiveDepthTerrainSceneCfg = PerceptiveDepthTerrainSceneCfg(
-        num_envs=4096, env_spacing=2.5, replicate_physics=False
-    )
+    scene: DepthTerrainSceneCfg = DepthTerrainSceneCfg(num_envs=4096, env_spacing=2.5, replicate_physics=False)
 
     def __post_init__(self):
         super().__post_init__()
@@ -224,7 +200,7 @@ class PreTrainingPerceptiveFDMDepthCfg(PerceptiveFDMDepthCfg):
         # add additional height scanner for supervision to the scene
         self.scene.target_height_scan = RayCasterCfg(
             prim_path="{ENV_REGEX_NS}/Robot/base",
-            offset=RayCasterCfg.OffsetCfg(pos=(1.75, 0.0, 5.0)),
+            offset=RayCasterCfg.OffsetCfg(pos=(1.75, 0.0, 0.5)),
             attach_yaw_only=True,
             pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=(4.5, 5.9)),
             debug_vis=True,
@@ -235,5 +211,6 @@ class PreTrainingPerceptiveFDMDepthCfg(PerceptiveFDMDepthCfg):
         # add target height scan to the additional observtiona group
         self.observations.fdm_add_obs_exteroceptive.target_height_scan = ObsTerm(
             func=mdp.height_scan_clipped,
-            params={"sensor_cfg": SceneEntityCfg("target_height_scan"), "offset": 0.05, "clip_height": 0.5},
+            params={"sensor_cfg": SceneEntityCfg("target_height_scan"), "offset": 0.05},
+            clip=(-0.5, 0.5),
         )

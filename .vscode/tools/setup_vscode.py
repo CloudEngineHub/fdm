@@ -1,3 +1,9 @@
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """This script sets up the vs-code settings for the Isaac Lab template project.
 
 This script merges the python.analysis.extraPaths from the "_isaac_sim/.vscode/settings.json" file into

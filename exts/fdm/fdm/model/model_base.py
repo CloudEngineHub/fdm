@@ -1,4 +1,8 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 """
 Abstract base class for all dynamics models.
@@ -15,7 +19,6 @@ from typing import Any, Literal
 from .base_layers import CNN, MLP
 from .model_base_cfg import BaseModelCfg
 from .resnet import PerceptNet, ResNet, ResNetFPN
-from .s4_rnn import S4RNN
 
 
 class Model(nn.Module, abc.ABC):
@@ -48,7 +51,7 @@ class Model(nn.Module, abc.ABC):
         **kwargs,
     ):
         super().__init__()
-        self.cfg = cfg
+        self.cfg: BaseModelCfg = cfg
         self.device = device
 
     @property
@@ -111,7 +114,7 @@ class Model(nn.Module, abc.ABC):
         model_in: torch.Tensor | tuple[torch.Tensor, ...],
         target: None | torch.Tensor | tuple[torch.Tensor, ...] = None,
         eval_in: torch.Tensor | tuple[torch.Tensor, ...] | None = None,
-        mode: Literal["eval", "test"] = "eval",
+        mode: Literal["eval", "test", "plot"] = "eval",
         suffix: str = "",
     ) -> tuple[torch.Tensor, dict[str, Any]]:
         """Computes an evaluation score for the model over the given input/target.
@@ -144,6 +147,26 @@ class Model(nn.Module, abc.ABC):
             loss, meta = self.loss(model_out, target, mode, suffix)
             meta = self.eval_metrics(model_out, target, eval_in, meta, mode, suffix)
         return loss.item(), meta
+
+        # import copy
+        # model_in_new = copy.deepcopy(model_in)
+        # model_out = self.forward(model_in_new)
+
+        # model_in_zeros = copy.deepcopy(model_in)
+        # for curr_input in model_in_zeros:
+        #     curr_input[1:] *= 0.0
+        # model_out_zeros = self.forward(model_in_zeros)
+        # assert torch.all(model_out_zeros[0][0] == model_out[0][0])
+        # assert torch.all(model_out_zeros[0][1] == model_out_zeros[0][24])
+
+        # import pickle
+        # with open('model_in_eval_new.pkl', 'rb') as f:
+        #     model_in_eval_new = pickle.load(f)
+        # model_out_pred = self.forward(model_in_eval_new)
+        # with open('model_out_eval_new.pkl', 'rb') as f:
+        #     model_out_eval_new = pickle.load(f)
+        # assert torch.all(model_out_pred[0] == model_out_eval_new[0])
+        # assert torch.all(model_out_pred[1] == model_out_eval_new[1])
 
     @abc.abstractmethod
     def eval_metrics(
@@ -190,11 +213,12 @@ class Model(nn.Module, abc.ABC):
         optimizer.zero_grad()
         model_out = self.forward(model_in)
         loss, meta = self.loss(model_out, target)
-        meta = self.eval_metrics(model_out, target, eval_in, meta)
         loss.backward()
-        if self.cfg.max_grad_norm:
+        if self.cfg.max_grad_norm is not None:
             nn.utils.clip_grad_norm_(self.parameters(), self.cfg.max_grad_norm)
         optimizer.step()
+        # compute evaluation metrics
+        meta = self.eval_metrics(model_out, target, eval_in, meta)
         return loss.item(), meta
 
     def reset(self, obs: torch.Tensor, rng: torch.Generator | None = None) -> dict[str, torch.Tensor]:
@@ -275,7 +299,7 @@ class Model(nn.Module, abc.ABC):
 
     def load(self, path: str):
         """Loads the model from the given path."""
-        self.load_state_dict(torch.load(path))
+        self.load_state_dict(torch.load(path, weights_only=True))
 
     def _construct_layer(self, layer_cfg) -> nn.Module:
         """Constructs a layer from the given configuration."""
@@ -283,8 +307,6 @@ class Model(nn.Module, abc.ABC):
             layer = MLP(layer_cfg)
         elif isinstance(layer_cfg, BaseModelCfg.CNNConfig):
             layer = CNN(layer_cfg)
-        elif isinstance(layer_cfg, BaseModelCfg.S4RNNConfig):
-            layer = S4RNN(**layer_cfg.to_dict())
         elif isinstance(layer_cfg, BaseModelCfg.ResNetConfig):
             if layer_cfg.multi_scale_features:
                 layer = ResNetFPN(layer_cfg)

@@ -1,3 +1,9 @@
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Script to train a Forward-Dynamics-Model"""
 
 from __future__ import annotations
@@ -9,24 +15,24 @@ import argparse
 
 from omni.isaac.lab.app import AppLauncher
 
+# local imports
+import utils.cli_args as cli_args  # isort: skip
+
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
-parser.add_argument("--num_envs", type=int, default=50, help="Number of environments to simulate.")
-parser.add_argument(
-    "--env", type=str, default="height", choices=["lidar", "depth", "height"], help="Name env sensor setting to load."
-)
 parser.add_argument("--terrain-cfg", type=str, default=None, help="Name of the terrain config to load.")
-parser.add_argument("--noise", action="store_true", default=False, help="Add noise to the observations.")
-parser.add_argument("--S4RNN", action="store_true", default=False, help="Use S4RNN instead of GRU.")
-parser.add_argument("--friction", action="store_true", default=False, help="Vary friction for each robot.")
 parser.add_argument("--regular", action="store_true", default=False, help="Spawn robots in a regular pattern.")
 parser.add_argument(
-    "--runs", type=str, nargs="+", default=None, help="Name of the run."
-)  # ["Dec20_23-58-06_flat_velerr0.0_linear0.4_normal0.3_constant0.3", "Dec21_00-00-17_rough_velerr0.0_linear0.4_normal0.3_constant0.3"]
-parser.add_argument(
-    "--equal-actions", action="store_true", default=False, help="Have the same actions for all environments."
+    "--runs",
+    type=str,
+    nargs="+",
+    default="Oct25_13-04-59_MergeSingleObjTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_ModPreTrained_Bs2048_DropOut_NoEarlyCollFilter",
+    help="Name of the run.",
 )
+parser.add_argument("--equal-actions", action="store_true", default=False, help="Have the same actions for all envs.")
 
+# append common FDM cli arguments
+cli_args.add_fdm_args(parser, default_num_envs=50)
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -42,12 +48,8 @@ import torch
 
 import fdm.env_cfg as env_cfg
 import fdm.mdp as mdp
-from fdm.utils import FDMRunner
-from fdm.utils.args_cli_utils import (
-    cfg_modifier_pre_init,
-    env_modifier_post_init,
-    runner_cfg_init,
-)
+from fdm.runner import FDMRunner
+from fdm.utils.args_cli_utils import cfg_modifier_pre_init, env_modifier_post_init, robot_changes, runner_cfg_init
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
@@ -58,6 +60,8 @@ torch.backends.cudnn.benchmark = False
 def main():
     # init runner cfg
     cfg = runner_cfg_init(args_cli)
+    # select robot
+    cfg = robot_changes(cfg, args_cli)
     # modify cfg
     cfg = cfg_modifier_pre_init(cfg, args_cli)
 
@@ -81,14 +85,6 @@ def main():
         print(f"[INFO] Using default terrain config. {cfg.env_cfg.scene.terrain.usd_path}")
     else:
         raise ValueError(f"Unknown terrain config {args_cli.terrain_cfg}")
-
-    # vary friction linearly for each robot
-    if args_cli.friction:
-        cfg.env_cfg.events.physics_material.func = mdp.regular_rigid_body_material
-        cfg.env_cfg.events.physics_material.params["static_friction_range"] = (0.2, 0.8)
-        cfg.env_cfg.events.physics_material.params.pop("dynamic_friction_range")
-        cfg.env_cfg.events.physics_material.params.pop("restitution_range")
-        cfg.env_cfg.events.physics_material.params.pop("num_buckets")
 
     # set name of the run
     if args_cli.runs is not None:

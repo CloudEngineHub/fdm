@@ -1,18 +1,29 @@
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
 
 import torch
+from typing import TYPE_CHECKING
 
 from .base_agent import Agent
-from .pink_noise_agent_cfg import PinkNoiseAgentCfg
 from .utils import powerlaw_psd_gaussian
+
+if TYPE_CHECKING:
+    from fdm.runner import FDMRunner
+
+    from .pink_noise_agent_cfg import PinkNoiseAgentCfg
 
 
 class PinkNoiseAgent(Agent):
     cfg: PinkNoiseAgentCfg
     """Pink noise agent configuration."""
 
-    def __init__(self, env, cfg: PinkNoiseAgentCfg):
-        super().__init__(env, cfg)
+    def __init__(self, cfg: PinkNoiseAgentCfg, runner: FDMRunner):
+        super().__init__(cfg, runner=runner)
         # reset
         self.reset(obs=None)
 
@@ -23,7 +34,7 @@ class PinkNoiseAgent(Agent):
 
         plan = powerlaw_psd_gaussian(
             self.cfg.colored_noise_exponent,
-            size=(self.env.num_envs, self.action_dim, self.cfg.horizon),
+            size=(self._runner.env.num_envs, self.action_dim, self.cfg.horizon),
             device=self.device,
         )
 

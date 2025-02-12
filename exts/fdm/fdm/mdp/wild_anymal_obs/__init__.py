@@ -1,3 +1,0 @@
-
-
-from .proprioception import ProprioceptiveObservation

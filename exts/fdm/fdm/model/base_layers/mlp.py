@@ -1,4 +1,8 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
@@ -11,39 +15,44 @@ from ..model_base_cfg import BaseModelCfg
 
 class MLP(nn.Module):
     def __init__(self, cfg: BaseModelCfg.MLPConfig):
+        """
+        Multi-Layer Perceptron model.
+
+        .. note::
+            Do not save config to allow for the model to be jit compiled.
+        """
         super().__init__()
-        self.cfg = cfg
 
         # get activation function
-        assert isinstance(self.cfg.activation, str), "Activation function must be a string"
-        assert hasattr(nn, self.cfg.activation), f"Activation function {self.cfg.activation} not found in torch.nn"
-        activation_function = getattr(nn, self.cfg.activation)
+        assert isinstance(cfg.activation, str), "Activation function must be a string"
+        assert hasattr(nn, cfg.activation), f"Activation function {cfg.activation} not found in torch.nn"
+        activation_function = getattr(nn, cfg.activation)
 
-        if self.cfg.shape:
+        if cfg.shape:
             # build MLP model
-            modules = [nn.Linear(self.cfg.input, self.cfg.shape[0]), activation_function()]
+            modules = [nn.Linear(cfg.input, cfg.shape[0]), activation_function()]
             scale = [math.sqrt(2)]
 
-            for idx in range(len(self.cfg.shape) - 1):
-                modules.append(nn.Linear(self.cfg.shape[idx], self.cfg.shape[idx + 1]))
-                if self.cfg.batchnorm:
-                    modules.append(nn.BatchNorm1d(self.cfg.shape[idx + 1]))
+            for idx in range(len(cfg.shape) - 1):
+                modules.append(nn.Linear(cfg.shape[idx], cfg.shape[idx + 1]))
+                if cfg.batchnorm:
+                    modules.append(nn.BatchNorm1d(cfg.shape[idx + 1]))
                 modules.append(activation_function())
-                if self.cfg.dropout != 0.0:
-                    modules.append(nn.Dropout(self.cfg.dropout))
+                if cfg.dropout != 0.0:
+                    modules.append(nn.Dropout(cfg.dropout))
                 scale.append(math.sqrt(2))
 
-            modules.append(nn.Linear(self.cfg.shape[-1], self.cfg.output))
+            modules.append(nn.Linear(cfg.shape[-1], cfg.output))
             self.architecture = nn.Sequential(*modules)
             scale.append(math.sqrt(2))
         else:
             # build single layer perceptron
-            modules = [nn.Linear(self.cfg.input, self.cfg.output)]
-            if self.cfg.batchnorm:
-                modules.append(nn.BatchNorm1d(self.cfg.output))
+            modules = [nn.Linear(cfg.input, cfg.output)]
+            if cfg.batchnorm:
+                modules.append(nn.BatchNorm1d(cfg.output))
             modules.append(activation_function())
-            if self.cfg.dropout != 0.0:
-                modules.append(nn.Dropout(self.cfg.dropout))
+            if cfg.dropout != 0.0:
+                modules.append(nn.Dropout(cfg.dropout))
             self.architecture = nn.Sequential(*modules)
             scale = [math.sqrt(2)]
 

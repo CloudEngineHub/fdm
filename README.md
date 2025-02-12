@@ -1,4 +1,4 @@
-# Forward Dyanmics Model
+# Forward Dynamics Model
 
 [![IsaacSim](https://img.shields.io/badge/IsaacSim-4.5.0-silver.svg)](https://docs.isaacsim.omniverse.nvidia.com/latest/index.html)
 [![Isaac Lab](https://img.shields.io/badge/IsaacLab-2.0.1-silver)](https://isaac-sim.github.io/IsaacLab)

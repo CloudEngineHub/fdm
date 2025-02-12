@@ -1,0 +1,42 @@
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
+from dataclasses import MISSING
+
+from omni.isaac.lab.utils import configclass
+
+from .base_agent import Agent
+from .base_agent_cfg import AgentCfg
+from .sampling_planner_agent import SamplingPlannerAgent
+
+"""
+Random Path command generators.
+"""
+
+
+@configclass
+class SamplingPlannerAgentCfg(AgentCfg):
+    """Configuration for the uniform velocity command generator."""
+
+    class_type: type[Agent] = SamplingPlannerAgent
+    """The class type of the agent."""
+
+    @configclass
+    class Ranges:
+        """Ranges for the velocity commands."""
+
+        lin_vel_x: tuple[float, float] = MISSING  # min max [m/s]
+        lin_vel_y: tuple[float, float] = MISSING  # min max [m/s]
+        ang_vel_z: tuple[float, float] = MISSING  # min max [rad/s]
+        """Normal distribution ranges for the velocity commands."""
+
+    ranges: Ranges = MISSING
+    """Distribution ranges for the velocity commands."""
+
+    population_size: int = 128
+    """Population size for the sampling-based planner."""

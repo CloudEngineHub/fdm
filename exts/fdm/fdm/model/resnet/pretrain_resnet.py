@@ -1,10 +1,13 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 # Adatped from: https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py
 
 import torch
 import torch.nn as nn
-
 import torchvision.transforms as transforms
 
 

@@ -1,27 +1,33 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
-import prettytable
 import torch
 import torch.nn as nn
 from typing import TYPE_CHECKING
 
-from .model_base import Model
+from .fdm_model import FDMModel
 from .model_base_cfg import BaseModelCfg
-from .utils import EmpiricalNormalization, L2Loss
 
 if TYPE_CHECKING:
     from .fdm_proprioception_model_cfg import FDMProprioceptionModelCfg, FDMProprioceptionVelocityModelCfg
 
 
-class FDMProprioceptionModel(Model):
+class FDMProprioceptionModel(FDMModel):
     cfg: FDMProprioceptionModelCfg
     """Model config class"""
 
     def __init__(self, cfg: FDMProprioceptionModelCfg, device: str):
         super().__init__(cfg, device)
 
+        # add friction loss
+        self.friction_loss = nn.MSELoss()
+
+    def _setup_layers(self):
         # build layers
         self.state_obs_proprioceptive_encoder = self._construct_layer(self.cfg.state_obs_proprioception_encoder)
         self.recurrence = self._construct_layer(self.cfg.recurrence)
@@ -31,46 +37,6 @@ class FDMProprioceptionModel(Model):
             self.action_encoder = self._construct_layer(self.cfg.action_encoder)
         else:
             self.action_encoder = None
-
-        # init loss functions
-        if self.cfg.pos_loss_norm == "mse":
-            self.position_loss = nn.MSELoss()
-        elif self.cfg.pos_loss_norm == "l2":
-            self.position_loss = L2Loss
-        elif self.cfg.pos_loss_norm == "l1":
-            self.position_loss = nn.L1Loss()
-        else:
-            raise ValueError(f"Unknown position loss norm: {self.cfg.pos_loss_norm}")
-
-        self.heading_loss = nn.MSELoss()
-        self.perfect_velocity_position_loss = nn.MSELoss()
-        self.stop_loss = nn.MSELoss()
-        self.friction_loss = nn.MSELoss()
-
-        # init velocity and acceleration limit buffer --> filled by maximum oberserved simulation values
-        self.acceleration_limits = torch.zeros(3, device=self.device)
-        self.velocity_limits = torch.zeros(3, device=self.device)
-
-        # include empirical normalizer for the proprioceptive observations
-        self.proprioceptive_normalizer = EmpiricalNormalization(self.cfg.empirical_normalization_dim)
-
-        # print number of parameters
-        table = prettytable.PrettyTable(["Layer", "Parameters"])
-        table.title = f"[INFO] Model Parameters (Total: {self.number_of_parameters})"
-        for layer, count in self.layer_parameters.items():
-            table.add_row([layer, count])
-        print(table)
-
-    """
-    Update physical limits
-    """
-
-    def set_acceleration_limits(self, acceleration_limits: torch.Tensor):
-        # check for each acceleration if a larger value has been observed in each of the elements of the tensor
-        self.acceleration_limits = torch.maximum(self.acceleration_limits, acceleration_limits.to(self.device))
-
-    def set_velocity_limits(self, velocity_limits: torch.Tensor):
-        self.velocity_limits = torch.maximum(self.velocity_limits, velocity_limits.to(self.device))
 
     """
     Forward function of the dynamics model
@@ -154,38 +120,6 @@ class FDMProprioceptionModel(Model):
         # add relative transitions to previous ones to get absolute transitions
         state_traj = torch.cumsum(rel_state_transitions, dim=1)
 
-        # if isinstance(self.cfg.recurrence, BaseModelCfg.MLPConfig):
-        #     forward_predict_state_obs = self.recurrence(
-        #         torch.concatenate([encoded_actions.flatten(start_dim=1), encoded_state_obs_proprioceptive], dim=1)
-        #     )
-        # else:
-        #     hidden = torch.zeros((self.cfg.recurrence.num_layers, batch_size, self.cfg.recurrence.hidden_size), device=self.device)
-        #     state_traj = torch.zeros((batch_size, traj_len, self.cfg.state_predictor.output), device=self.device)
-        #     prev_state_transitions = torch.zeros((batch_size, self.cfg.state_predictor.output), device=self.device)
-        #     prev_rel_state_transitions = torch.zeros((batch_size, self.cfg.state_predictor.output), device=self.device)
-
-        #     for idx in range(traj_len):
-        #         forward_predict_state_obs, hidden = self.recurrence(
-        #             torch.concatenate([encoded_actions[:, idx], encoded_state_obs_proprioceptive, prev_state_transitions, prev_rel_state_transitions], dim=1).unsqueeze(1), hidden
-        #         )
-        #         # prev_rel_state_transitions = self.state_predictor(forward_predict_state_obs.squeeze(1))
-
-        #         # # transform relative state transitions to base frame and add all previous state transitions
-        #         # state_traj[:, idx, 2:] = prev_rel_state_transitions[:, 2:] + prev_state_transitions[:, 2:]
-        #         # so2 = torch.stack([state_traj[:, idx, [2, 3]] * torch.tensor([1, -1], device=self.device), state_traj[:, idx, [3, 2]]], dim=2)
-        #         # state_traj[:, idx, :2] = (so2 @ prev_rel_state_transitions[:, :2, None]).squeeze(-1) + prev_state_transitions[:, :2]
-
-        #         # # update previous state transitions
-        #         # prev_state_transitions = state_traj[:, idx]
-
-        #         state_traj[:, idx] = self.state_predictor(forward_predict_state_obs.squeeze(1))
-        #         prev_rel_state_transitions = state_traj[:, idx].clone()
-        #         prev_state_transitions = torch.sum(state_traj, dim=1)
-
-        # # TODO: implement as correction for perfect velocity model
-        # # add relative transitions to previous ones to get absolute transitions
-        # state_traj = torch.cumsum(state_traj, dim=1)
-
         return state_traj, friction
 
     def loss(
@@ -205,60 +139,20 @@ class FDMProprioceptionModel(Model):
         )
 
         # stop loss - do not move when collision has happenend
-        stop_loss = self.stop_loss(
-            pred_state_traj[target_collision_state_traj == 1], target_state_traj[target_collision_state_traj == 1]
-        )
-        stop_loss = torch.tensor(0.0, device=self.device) if torch.isnan(stop_loss) else stop_loss
+        # note: has to be called before the collision is possibly unified
+        stop_loss = self._stop_loss(pred_state_traj, target_collision_state_traj, target_state_traj)
+
+        if self.cfg.unified_failure_prediction:
+            target_collision_state_traj = torch.max(target_collision_state_traj, dim=-1)[0]
 
         # Position loss (MSE)
-        if self.cfg.weight_inverse_distance:
-            position_loss_list = [
-                (
-                    (pred_state_traj[:, idx, :2] - target_state_traj[:, idx, :2]) ** 2
-                    / (torch.norm(target_state_traj[:, idx, :2], dim=-1) + 1e-6).unsqueeze(1)
-                ).mean()
-                * torch.norm(target_state_traj[:, idx, :2], dim=-1).mean()
-                for idx in range(pred_state_traj.shape[1])
-            ]
-        else:
-            position_loss_list = [
-                self.position_loss(pred_state_traj[:, idx, :2], target_state_traj[:, idx, :2])
-                for idx in range(pred_state_traj.shape[1])
-            ]
-        position_loss = torch.sum(torch.stack(position_loss_list), dim=0)  # / pred_state_traj.shape[1]
+        position_loss, position_loss_list = self._position_loss(pred_state_traj, target_state_traj)
 
         # Heading loss (MSE)
-        heading_loss_list = [
-            self.heading_loss(pred_state_traj[:, idx, 2:], target_state_traj[:, idx, 2:])
-            for idx in range(pred_state_traj.shape[1])
-        ]
-        heading_loss = torch.sum(torch.stack(heading_loss_list), dim=0)  # / pred_state_traj.shape[1]
+        heading_loss, heading_loss_list = self._heading_loss(pred_state_traj, target_state_traj)
 
-        # get change in position and heading
-        position_delta = torch.cat(
-            [pred_state_traj[:, 0, :2].unsqueeze(1), pred_state_traj[:, 1:, :2] - pred_state_traj[:, :-1, :2]], dim=1
-        )
-        # convert heading representation to radians
-        pred_heading_change = torch.atan2(pred_state_traj[:, :, 2], pred_state_traj[:, :, 3])
-        heading_delta = torch.cat(
-            [pred_heading_change[:, 0].unsqueeze(1), pred_heading_change[:, 1:] - pred_heading_change[:, :-1]], dim=1
-        )
-        # enforce periodicity of the heading
-        heading_delta = torch.abs(heading_delta)
-        heading_delta = torch.minimum((2 * torch.pi) - heading_delta, heading_delta)
-        # combine position and heading delta
-        pose_delta = torch.cat([position_delta, heading_delta.unsqueeze(2)], dim=2)
-
-        velocity = pose_delta / self.cfg.command_timestep
-        # Velocity loss (sum of violations)
-        velocity_loss = torch.abs(velocity) - self.velocity_limits
-        velocity_loss = torch.sum(velocity_loss.clip(min=0.0))
-
-        # get acceleration
-        acceleration = (velocity[:, 1:] - velocity[:, :-1]) / self.cfg.command_timestep
-        # Acceleration loss (sum of violations)
-        acceleration_loss = torch.abs(acceleration) - self.acceleration_limits
-        acceleration_loss = torch.sum(acceleration_loss.clip(min=0.0))
+        # get the velocity and acceleration losses
+        velocity_loss, acceleration_loss = self._vel_acc_loss(pred_state_traj, target_collision_state_traj)
 
         # friction loss
         friction_loss = self.friction_loss(pred_friction, target_friction)
@@ -312,23 +206,10 @@ class FDMProprioceptionModel(Model):
             meta = {}
 
         # compare to perfect velocity tracking error when eval mode
-        if mode == "eval" and "eval Position Loss [Batch]" in meta:
-            if isinstance(eval_in, (tuple, list)):
-                eval_in = eval_in[0].to(self.device)
-            else:
-                eval_in = eval_in.to(self.device)
-            perf_vel_loss = self.perfect_velocity_position_loss(eval_in, target_state_traj).item()
-            pred_loss = self.perfect_velocity_position_loss(pred_state_traj, target_state_traj).item()
-            meta[f"{mode}{suffix} Pred Loss / Perfect Velocity Loss [Batch]"] = pred_loss / perf_vel_loss
+        meta = self._eval_perf_velocity(meta, mode, eval_in, target_state_traj, pred_state_traj, suffix)
 
         # Heading error in degrees
-        yaw_diff = torch.abs(
-            torch.atan2(pred_state_traj[:, :, 2], pred_state_traj[:, :, 3])
-            - torch.atan2(target_state_traj[:, :, 2], target_state_traj[:, :, 3])
-        )
-        # enforce periodicity of the heading
-        yaw_diff = torch.minimum((2 * torch.pi) - yaw_diff, yaw_diff)
-        meta[f"{mode}{suffix} Heading Degree Error [Batch]"] = torch.rad2deg(torch.mean(yaw_diff)).item()
+        meta = self._eval_heading_degrees(meta, mode, pred_state_traj, target_state_traj, suffix)
 
         # Offset in meters w.r.t. the target position relative to the traveled distance
         position_delta = torch.norm(pred_state_traj[:, -1, :2] - target_state_traj[:, -1, :2], dim=-1, p=2)
@@ -339,14 +220,14 @@ class FDMProprioceptionModel(Model):
             # skip if no samples within distance
             if torch.sum(samples_within_distance) == 0:
                 continue
-            meta[f"{mode}{suffix} Final Position Offset {distance-1} - {distance}m [Batch]"] = torch.mean(
+            meta[f"{mode}{suffix} Final Position Offset {distance - 1} - {distance}m [Batch]"] = torch.mean(
                 position_delta[samples_within_distance]
             ).item()
             if torch.sum(samples_within_distance) > 1:
-                meta[f"{mode}{suffix} Final Position Offset Std {distance-1} - {distance}m [Batch]"] = torch.std(
+                meta[f"{mode}{suffix} Final Position Offset Std {distance - 1} - {distance}m [Batch]"] = torch.std(
                     position_delta[samples_within_distance]
                 ).item()
-            meta[f"{mode}{suffix} Final Relative Position Offset {distance-1} - {distance}m [Batch]"] = torch.mean(
+            meta[f"{mode}{suffix} Final Relative Position Offset {distance - 1} - {distance}m [Batch]"] = torch.mean(
                 rel_position_delta[samples_within_distance]
             ).item()
         meta[f"{mode}{suffix} Final Position Offset [Batch]"] = torch.mean(position_delta).item()
@@ -439,40 +320,7 @@ class FDMProprioceptionVelocityModel(FDMProprioceptionModel):
         corr_vel = corr_vel.view(batch_size, traj_len, -1)
 
         # residual connection to velocity command
-        # TODO: check if that improves the performance
         corr_vel = corr_vel + actions
-
-        # if isinstance(self.cfg.recurrence, BaseModelCfg.MLPConfig):
-        #     forward_predict_state_obs = self.recurrence(
-        #         torch.concatenate([encoded_actions.flatten(start_dim=1), encoded_state_obs_proprioceptive], dim=1)
-        #     )
-        # else:
-        #     hidden = torch.zeros((self.cfg.recurrence.num_layers, batch_size, self.cfg.recurrence.hidden_size), device=self.device)
-        #     state_traj = torch.zeros((batch_size, traj_len, self.cfg.state_predictor.output), device=self.device)
-        #     prev_state_transitions = torch.zeros((batch_size, self.cfg.state_predictor.output), device=self.device)
-        #     prev_rel_state_transitions = torch.zeros((batch_size, self.cfg.state_predictor.output), device=self.device)
-
-        #     for idx in range(traj_len):
-        #         forward_predict_state_obs, hidden = self.recurrence(
-        #             torch.concatenate([encoded_actions[:, idx], encoded_state_obs_proprioceptive, prev_state_transitions, prev_rel_state_transitions], dim=1).unsqueeze(1), hidden
-        #         )
-        #         # prev_rel_state_transitions = self.state_predictor(forward_predict_state_obs.squeeze(1))
-
-        #         # # transform relative state transitions to base frame and add all previous state transitions
-        #         # state_traj[:, idx, 2:] = prev_rel_state_transitions[:, 2:] + prev_state_transitions[:, 2:]
-        #         # so2 = torch.stack([state_traj[:, idx, [2, 3]] * torch.tensor([1, -1], device=self.device), state_traj[:, idx, [3, 2]]], dim=2)
-        #         # state_traj[:, idx, :2] = (so2 @ prev_rel_state_transitions[:, :2, None]).squeeze(-1) + prev_state_transitions[:, :2]
-
-        #         # # update previous state transitions
-        #         # prev_state_transitions = state_traj[:, idx]
-
-        #         state_traj[:, idx] = self.state_predictor(forward_predict_state_obs.squeeze(1))
-        #         prev_rel_state_transitions = state_traj[:, idx].clone()
-        #         prev_state_transitions = torch.sum(state_traj, dim=1)
-
-        # # TODO: implement as correction for perfect velocity model
-        # # add relative transitions to previous ones to get absolute transitions
-        # state_traj = torch.cumsum(state_traj, dim=1)
 
         # get the resulting change in position and angle when applying the commands perfectly
         # velocity command units x: [m/s], y: [m/s], phi: [rad/s]

@@ -1,10 +1,16 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
 from typing import Literal
 
 from omni.isaac.lab.utils import configclass
+
+from fdm import LARGE_UNIFIED_HEIGHT_SCAN
 
 from .fdm_model import (
     FDMModel,
@@ -28,14 +34,14 @@ class FDMBaseModelCfg(BaseModelCfg):
     ###
 
     # state and proprioception encoder
-    state_obs_proprioception_encoder: BaseModelCfg.GRUConfig | BaseModelCfg.S4RNNConfig | BaseModelCfg.MLPConfig = (
-        BaseModelCfg.GRUConfig(input_size=150, hidden_size=64, num_layers=2, dropout=0.0)
+    state_obs_proprioception_encoder: BaseModelCfg.GRUConfig | BaseModelCfg.MLPConfig = BaseModelCfg.GRUConfig(
+        input_size=142, hidden_size=64, num_layers=2, dropout=0.0
     )
     # env encoder
     obs_exteroceptive_encoder: BaseModelCfg.MLPConfig | BaseModelCfg.CNNConfig | None = None
     # command encoder
     action_encoder: BaseModelCfg.MLPConfig | None = BaseModelCfg.MLPConfig(
-        input=3, output=16, shape=None, dropout=0.2, batchnorm=True, activation="LeakyReLU"
+        input=3, output=16, shape=None, dropout=0.2, batchnorm=False, activation="LeakyReLU"  # , batchnorm=True
     )
     # additional env encoder
     add_obs_exteroceptive_encoder: BaseModelCfg.MLPConfig | None = None
@@ -50,15 +56,15 @@ class FDMBaseModelCfg(BaseModelCfg):
     )
     # state predictor
     state_predictor: BaseModelCfg.MLPConfig = BaseModelCfg.MLPConfig(
-        input=160, output=4, shape=[64, 32, 16], dropout=0.2, batchnorm=True, activation="LeakyReLU"
+        input=160, output=3, shape=[64, 32, 16], dropout=0.2, batchnorm=False, activation="LeakyReLU"  # batchnorm=True
     )
     # collision predictior
     collision_predictor: BaseModelCfg.MLPConfig = BaseModelCfg.MLPConfig(
-        input=160, output=1, shape=[64, 32, 16], dropout=0.2, batchnorm=True, activation="LeakyReLU"
+        input=160, output=1, shape=[64, 32, 16], dropout=0.2, batchnorm=False, activation="LeakyReLU"  # batchnorm=True
     )
     # energy predictor
     energy_predictor: BaseModelCfg.MLPConfig = BaseModelCfg.MLPConfig(
-        input=160, output=1, shape=[64], dropout=0.2, batchnorm=True, activation="LeakyReLU"
+        input=160, output=1, shape=[64], dropout=0.2, batchnorm=False, activation="LeakyReLU"  # batchnorm=True
     )
     # friction predictor
     friction_predictor: BaseModelCfg.MLPConfig = BaseModelCfg.MLPConfig(
@@ -66,11 +72,19 @@ class FDMBaseModelCfg(BaseModelCfg):
     )
 
     # empirical normalization
-    empirical_normalization_dim: int = 140
+    empirical_normalization_dim: int = 132
     """The dimension of the empirical normalization.
 
     Should be applied on the proprioception, i.e. the state_obs_proprioception_encoder input size - state_dim.
     """
+
+    # exclude part of the state from the input but keep as label
+    exclude_state_idx_from_input: list[int] | None = None
+    """List of indices of the state that should be excluded from the input but kept as label."""
+
+    # hard contact prediction observatiion metric
+    hard_contact_metric: Literal["contact", "torque", "energy"] = "energy"
+    """Metric used for the hard contact prediction."""
 
     """
     Loss-Parameters
@@ -96,7 +110,7 @@ class FDMBaseModelCfg(BaseModelCfg):
         "energy": False,
     }
     """Whether to scale the loss with the progress of the learning."""
-    unified_failure_prediction: bool = True
+    unified_failure_prediction: bool = False
     """Summarize the failure predicition of each command into a unified value that is used for the cost."""
     weight_inverse_distance: bool = False
     """Weight the position loss with the inverse distance to the goal.
@@ -121,13 +135,17 @@ class FDMBaseModelCfg(BaseModelCfg):
 
     The states are recorded at a frequency of ``command_timestep / history_length``.
     """
+    collision_threshold: float = 0.5
+    """Collision threshold for the collision prediction. Default is 0.5."""
+    eval_distance_interval: float = 1.0
+    """Distance interval for the evaluation metrics."""
+    zero_collision_actions: bool = False
+    """set actions to zero if predicted that they are in collision"""
 
 
-@configclass
-class FDMLidarModelCfg(FDMBaseModelCfg):
-    obs_exteroceptive_encoder = FDMBaseModelCfg.MLPConfig(
-        input=360, output=32, shape=[128, 64], dropout=0.2, batchnorm=False, activation="LeakyReLU"
-    )
+###
+# Height Scan Models
+###
 
 
 @configclass
@@ -137,39 +155,53 @@ class FDMHeightModelMultiStepCfg(FDMBaseModelCfg):
 
     obs_exteroceptive_encoder = FDMBaseModelCfg.CNNConfig(
         in_channels=1,
-        out_channels=[32, 64, 128, 256],
-        stride=[1, 2, 2, 2],
-        kernel_size=[(7, 7), (3, 3), (3, 3), (3, 3)],
-        max_pool=[True, False, False, False],
+        out_channels=[32, 64, 128, 256] if not LARGE_UNIFIED_HEIGHT_SCAN else [32, 64, 128, 128, 512],
+        stride=[1, 2, 2, 2] if not LARGE_UNIFIED_HEIGHT_SCAN else [1, 1, 2, 2, 2],
+        kernel_size=(
+            [(7, 7), (3, 3), (3, 3), (3, 3)]
+            if not LARGE_UNIFIED_HEIGHT_SCAN
+            else [(7, 7), (3, 3), (3, 3), (3, 3), (3, 3)]
+        ),
+        max_pool=[True, False, False, False] if not LARGE_UNIFIED_HEIGHT_SCAN else [True, False, False, False, False],
         activation="LeakyReLU",
         batchnorm=False,
+        avg_pool=LARGE_UNIFIED_HEIGHT_SCAN,
+        flatten=not LARGE_UNIFIED_HEIGHT_SCAN,
     )
 
     def __post_init__(self):
         # adjust recurrent layer
         self.recurrence.input_size = (
-            self.action_encoder.output
-            + self.state_obs_proprioception_encoder.hidden_size
-            + self.friction_predictor.output
+            self.action_encoder.output  # 64
+            + self.state_obs_proprioception_encoder.hidden_size  # 64
+            + self.friction_predictor.output  # 4
             + 512  # height scan
         )
-        self.recurrence.hidden_size = 256
-        self.recurrence.dropout = 0.0
+        # TINY-Recurrent
+        self.recurrence.hidden_size = 128
+        # NORMAL-Recurrent
+        # self.recurrence.hidden_size = 256
+        self.recurrence.dropout = 0.2
+        self.state_obs_proprioception_encoder.dropout = 0.2
 
         # adjust output sizes to predict all timesteps at once
-        self.state_predictor.output = 30
-        self.collision_predictor.output = 10
-        self.energy_predictor.output = 10
+        self.state_predictor.output = self.state_predictor.output * self.prediction_horizon
+        self.collision_predictor.output = self.prediction_horizon
+        self.energy_predictor.output = self.prediction_horizon
 
         # adjust input sizes of the predictor networks
         self.state_predictor.input = self.recurrence.hidden_size * self.prediction_horizon
         self.collision_predictor.input = self.recurrence.hidden_size * self.prediction_horizon
         self.energy_predictor.input = self.recurrence.hidden_size * self.prediction_horizon
 
-        # adjust shape of the predictor networks
-        self.state_predictor.shape = [256, 128, 64]
-        self.collision_predictor.shape = [128, 64]
-        self.energy_predictor.shape = [128, 64]
+        # adjust shape of the predictor networks (TINY-Decoder)
+        self.state_predictor.shape = [128, 64]
+        self.collision_predictor.shape = [64]
+        self.energy_predictor.shape = [64]
+        # adjust shape of the predictor networks (NORMAL-Decoder)
+        # self.state_predictor.shape = [256, 128, 64]
+        # self.collision_predictor.shape = [128, 64]
+        # self.energy_predictor.shape = [128, 64]
 
 
 @configclass
@@ -246,16 +278,21 @@ class FDMLargeHeightModelCfg(FDMBaseModelCfg):
         batchnorm=False,
         activation="LeakyReLU",
         compress_MLP_layers=FDMBaseModelCfg.MLPConfig(
-            input=2048, output=32, shape=[256], activation="LeakyReLU", dropout=0.2, batchnorm=True
+            input=2048, output=32, shape=[256], activation="LeakyReLU", dropout=0.2, batchnorm=False  # batchnorm=True
         ),
     )
+
+
+###
+# Depth Image Models
+###
 
 
 @configclass
 class FDMDepthModelCfg(FDMBaseModelCfg):
     """Exteroceptive observation are depth images of size (240, 320)"""
 
-    state_obs_proprioception_encoder: BaseModelCfg.GRUConfig | BaseModelCfg.S4RNNConfig = BaseModelCfg.GRUConfig(
+    state_obs_proprioception_encoder: BaseModelCfg.GRUConfig = BaseModelCfg.GRUConfig(
         input_size=142, hidden_size=32, num_layers=2, dropout=0.2
     )
     obs_exteroceptive_encoder: FDMBaseModelCfg.ResNetConfig = FDMBaseModelCfg.ResNetConfig(
@@ -264,7 +301,7 @@ class FDMDepthModelCfg(FDMBaseModelCfg):
         avg_pool=True,
         downsample_MLP=None,
         # downsample_MLP=FDMBaseModelCfg.MLPConfig(
-        #     input=768, output=128, shape=None, activation="LeakyReLU", dropout=0.2, batchnorm=True
+        #     input=768, output=128, shape=None, activation="LeakyReLU", dropout=0.2, batchnorm=False
         # ),
     )
     """Encoder for the exteroceptive observation."""
@@ -273,11 +310,11 @@ class FDMDepthModelCfg(FDMBaseModelCfg):
     )
     """Recurrent layers."""
     state_predictor: BaseModelCfg.MLPConfig = BaseModelCfg.MLPConfig(
-        input=160, output=4, shape=[64, 16], dropout=0.2, batchnorm=True, activation="LeakyReLU"
+        input=160, output=4, shape=[64, 16], dropout=0.2, batchnorm=False, activation="LeakyReLU"  # batchnorm=True
     )
     """State predictor."""
     collision_predictor: BaseModelCfg.MLPConfig = BaseModelCfg.MLPConfig(
-        input=160, output=1, shape=[64], dropout=0.2, batchnorm=True, activation="LeakyReLU"
+        input=160, output=1, shape=[64], dropout=0.2, batchnorm=False, activation="LeakyReLU"  # batchnorm=True
     )
     """Collision predictor."""
 

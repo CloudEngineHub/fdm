@@ -1,3 +1,9 @@
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Installation script for the 'ext_template' python package."""
 
 import os
@@ -14,12 +20,17 @@ EXTENSION_TOML_DATA = toml.load(os.path.join(EXTENSION_PATH, "config", "extensio
 INSTALL_REQUIRES = [
     # NOTE: Add dependencies
     "psutil",
+    "pypose",
+    "torchmetrics",
+    "kornia",
+    "seaborn",
+    "tabulate",
 ]
 
 # Installation operation
 setup(
-    name="ext_template",
-    packages=["ext_template"],
+    name="fdm",
+    packages=["fdm"],
     author=EXTENSION_TOML_DATA["package"]["author"],
     maintainer=EXTENSION_TOML_DATA["package"]["maintainer"],
     url=EXTENSION_TOML_DATA["package"]["repository"],
@@ -33,7 +44,7 @@ setup(
     classifiers=[
         "Natural Language :: English",
         "Programming Language :: Python :: 3.10",
-        "Isaac Sim :: 4.0.0",
+        "Isaac Sim :: 4.2.0",
     ],
     zip_safe=False,
 )

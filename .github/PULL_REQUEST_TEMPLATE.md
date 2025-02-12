@@ -37,6 +37,7 @@ To upload images to a PR -- simply drag and drop an image while in edit mode and
 - [ ] I have run the [`pre-commit` checks](https://pre-commit.com/) with `./formatter.sh`
 - [ ] I have made corresponding changes to the documentation
 - [ ] My changes generate no new warnings
+- [ ] When modifying the omniverse extension, I have updated the changelog and the corresponding version in the extension's `config/extension.toml` file
 
 <!--
 As you go through the checklist above, you can mark something as done by putting an x character in it

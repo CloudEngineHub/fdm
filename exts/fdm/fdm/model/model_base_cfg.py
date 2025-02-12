@@ -1,4 +1,8 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
@@ -55,17 +59,6 @@ class BaseModelCfg:
         compress_MLP_layers: BaseModelCfg.MLPConfig | None = None
 
     @configclass
-    class S4RNNConfig:
-        input_size: int = MISSING
-        hidden_size: int = MISSING
-        num_layers: int = 1
-        d_state: int = 32
-        batch_first: bool = True
-        dropout: float = 0.0
-        prenorm: bool = False
-        keep_states: bool = True
-
-    @configclass
     class ResNetConfig:
         layers: list[int] = MISSING
         """Number of layers in each block"""
@@ -105,5 +98,5 @@ class BaseModelCfg:
         img_size: tuple[int] = (180, 320)
         """Size of the input image"""
 
-    max_grad_norm: float | None = 1.0
+    max_grad_norm: float | None = 2.0
     """Maximum gradient norm for gradient clipping. If None, no clipping is performed"""

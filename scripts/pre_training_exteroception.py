@@ -1,3 +1,9 @@
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Script to train a Forward-Dynamics-Model"""
 
 from __future__ import annotations
@@ -9,9 +15,11 @@ import argparse
 
 from omni.isaac.lab.app import AppLauncher
 
+# local imports
+import utils.cli_args as cli_args  # isort: skip
+
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
-parser.add_argument("--num_envs", type=int, default=1024, help="Number of environments to simulate.")
 parser.add_argument(
     "--mode",
     type=str,
@@ -20,11 +28,9 @@ parser.add_argument(
     help="Mode of the script.",
 )
 parser.add_argument("--run_name", type=str, default=None, help="Name of the run.")
-parser.add_argument("--noise", action="store_true", default=False, help="Add noise to the observations.")
-parser.add_argument("--friction", action="store_true", default=False, help="Vary friction for each robot.")
-parser.add_argument("--S4RNN", action="store_true", default=False, help="Use S4RNN instead of GRU.")
-parser.add_argument("-d", "--debug", action="store_true", default=False, help="Enable debug mode.")
 
+# append common FDM cli arguments
+cli_args.add_fdm_args(parser, default_num_envs=1024)
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -43,11 +49,10 @@ simulation_app = app_launcher.app
 
 import torch
 
-from fdm.env_cfg import PreTrainingPerceptiveFDMDepthCfg
+from fdm.env_cfg import PreTrainingFDMDepthCfg
 from fdm.model import FDMExteroceptionModelCfg
-from fdm.utils import FDMRunner
-from fdm.utils.args_cli_utils import env_modifier_post_init
-from fdm.utils.runner_cfg import FDMRunnerCfg
+from fdm.runner import FDMRunner, FDMRunnerCfg
+from fdm.utils.args_cli_utils import env_modifier_post_init, robot_changes
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
@@ -59,7 +64,7 @@ def main():
     # init runner cfg
     cfg = FDMRunnerCfg(
         model_cfg=FDMExteroceptionModelCfg(),
-        env_cfg=PreTrainingPerceptiveFDMDepthCfg(),
+        env_cfg=PreTrainingFDMDepthCfg(),
     )
 
     # change wandb logging for exteroceptive pre-training
@@ -84,6 +89,7 @@ def main():
 
     # modify depth camera intrinsic
     args_cli.env = "depth"
+    runner = robot_changes(runner, args_cli)
     runner = env_modifier_post_init(runner, args_cli)
 
     # set the size of the target height map
@@ -102,7 +108,7 @@ def main():
 
     if args_cli.mode == "train":
         # save encoder of best model
-        runner.model.load_state_dict(torch.load(runner.model.get_model_path(runner.trainer.log_dir)))
+        runner.model.load_state_dict(torch.load(runner.model.get_model_path(runner.trainer.log_dir), weights_only=True))
         torch.save(
             runner.model.obs_exteroceptive_encoder.state_dict(),
             runner.model.get_model_path(runner.trainer.log_dir, "image_encoder"),

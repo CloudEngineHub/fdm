@@ -1,4 +1,8 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
@@ -6,7 +10,9 @@ from dataclasses import MISSING
 
 from omni.isaac.lab.utils import configclass
 
-from .base_agent import AgentCfg
+from .base_agent import Agent
+from .base_agent_cfg import AgentCfg
+from .time_correlated_actions import TimeCorrelatedCommandTrajectoryAgent
 
 """
 Random Path command generators.
@@ -16,6 +22,9 @@ Random Path command generators.
 @configclass
 class TimeCorrelatedCommandTrajectoryAgentCfg(AgentCfg):
     """Configuration for the uniform velocity command generator."""
+
+    class_type: type[Agent] = TimeCorrelatedCommandTrajectoryAgent
+    """The class type of the agent."""
 
     @configclass
     class Ranges:

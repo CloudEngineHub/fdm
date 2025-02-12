@@ -1,4 +1,8 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
@@ -6,7 +10,6 @@ from omni.isaac.lab.utils import configclass
 
 from .fdm_model_cfg import FDMBaseModelCfg
 from .fdm_proprioception_model import FDMProprioceptionModel, FDMProprioceptionVelocityModel
-from .model_base_cfg import BaseModelCfg
 
 
 @configclass
@@ -15,23 +18,9 @@ class FDMProprioceptionModelCfg(FDMBaseModelCfg):
 
     class_type: type[FDMProprioceptionModel] = FDMProprioceptionModel
 
-    state_obs_proprioception_encoder: BaseModelCfg.GRUConfig = BaseModelCfg.GRUConfig(
-        input_size=150, hidden_size=64, num_layers=2, dropout=0.0
-    )
-
-    friction_predictor: BaseModelCfg.MLPConfig = BaseModelCfg.MLPConfig(
-        input=64, output=4, shape=[32], activation="LeakyReLU"
-    )
-
-    empirical_normalization_dim: int = 140
-    """The dimension of the empirical normalization.
-
-    Should be applied on the proprioception, i.e. the state_obs_proprioception_encoder input size - state_dim.
-    """
-
     def __post_init__(self):
         # introduce the additional loss weights
-        self.loss_weights["acceleration"] = 1.0
+        self.loss_weights["acceleration"] = 0.5
         self.loss_weights["friction"] = 1.0
 
         # adjust recurrent layer

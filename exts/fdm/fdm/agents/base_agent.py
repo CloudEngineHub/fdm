@@ -1,26 +1,25 @@
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
 import torch
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
-from omni.isaac.lab.envs import ManagerBasedRLEnv
-from omni.isaac.lab.utils.configclass import configclass
+if TYPE_CHECKING:
+    from fdm.runner import FDMRunner
 
-from fdm.model.fdm_model_cfg import FDMBaseModelCfg
-
-
-@configclass
-class AgentCfg:
-    horizon: int = 200
-    """Number of steps to plan ahead."""
+    from .base_agent_cfg import AgentCfg
 
 
 class Agent(ABC):
-    def __init__(self, cfg: AgentCfg, model_cfg: FDMBaseModelCfg, env: ManagerBasedRLEnv):
-        self.env: ManagerBasedRLEnv = env
+    def __init__(self, cfg: AgentCfg, runner: FDMRunner):
         self.cfg: AgentCfg = cfg
-        self.model_cfg: FDMBaseModelCfg = model_cfg
+        self._runner: FDMRunner = runner
 
         # init buffers
         self._init_buffers()
@@ -31,30 +30,36 @@ class Agent(ABC):
 
     @property
     def device(self):
-        return self.env.device
+        return self._runner.env.device
 
     @property
     def action_dim(self):
-        return self.env.action_manager.action.shape[1]
+        return self._runner.env.action_manager.action.shape[1]
 
     @property
     def resample_interval(self):
-        return self.model_cfg.command_timestep / self.env.step_dt
+        return self._runner.cfg.model_cfg.command_timestep / self._runner.env.step_dt
 
     """
     Operations
     """
 
-    def act(self, obs: torch.Tensor, dones: torch.Tensor, feet_contact: torch.Tensor):
+    def act(self, obs: dict, dones: torch.Tensor, feet_contact: torch.Tensor):
         """Get the next actions for all environments.
 
-        dones specifies the terminated environments for which the next command has to be resampled before the
-        official resampling period.
-        The function returns the next action for all environments. For all non-resampled environments, this will be
-        the same as the previous action.
+        Args:
+            obs: The current observation.
+            dones: The done flags for all environments. Specifies the terminated environments for which the
+                next command has to be resampled before the official resampling period.
+
+        Returns:
+            The next action for all environments. For all non-resampled environments, this will be the
+                same as the previous action.
         """
         # for colliding environments, reset the action that is applied in the next step call and that will be recorded
         # for the current state
+        # the action is applied to the step that resets the environment and to further steps until the next recording
+        # after the collision
         colliding_envs = obs["fdm_state"][..., 7].to(torch.bool)
         if torch.any(colliding_envs):
             self.reset(obs=obs, env_ids=self._ALL_INDICES[colliding_envs], return_actions=False)
@@ -74,6 +79,15 @@ class Agent(ABC):
         # for environments that should be resampled, increase the counter
         self._plan_step[updatable_envs] += 1
 
+        # agents (e.g. sampling planner agent) can depend on the reset state of the environment, which is available
+        # after the sim reset, i.e., when dones is True. Therefore, this agent should perform another reset before
+        # the first time their _plan_step gets increased.
+        # for these cases, the initial action given from the agent should be random and all further actions can be
+        # more targeted
+        planner_reset_after = updatable_envs & (self._plan_step == 1)
+        if torch.any(planner_reset_after):
+            self.plan_reset(obs=obs, env_ids=self._ALL_INDICES[planner_reset_after])
+
         # ensure to replan the environments out of a plan with their last step as new init
         env_to_replan = self._ALL_INDICES[self._plan_step >= (self.cfg.horizon - 1)]
         self.plan(env_ids=env_to_replan, obs=obs, random_init=False)
@@ -86,7 +100,7 @@ class Agent(ABC):
         return self._plan[self._ALL_INDICES, self._plan_step]
 
     def reset(
-        self, obs: torch.Tensor | None = None, env_ids: torch.Tensor | None = None, return_actions: bool = True
+        self, obs: dict | None = None, env_ids: torch.Tensor | None = None, return_actions: bool = True
     ) -> torch.Tensor | None:
         # handle case for all envs
         if env_ids is None:
@@ -98,9 +112,20 @@ class Agent(ABC):
         self.plan(env_ids=env_ids, obs=obs, random_init=True)
         if return_actions:
             return self._plan[self._ALL_INDICES, self._plan_step]
+        else:
+            return None
 
     @abstractmethod
-    def plan(self, obs: torch.Tensor | None = None, env_ids: torch.Tensor | None = None, random_init: bool = True):
+    def plan(self, obs: dict | None = None, env_ids: torch.Tensor | None = None, random_init: bool = True):
+        pass
+
+    def plan_reset(self, obs: dict, env_ids: torch.Tensor):
+        """Replan for already reset environments in the simulator.
+
+        Necessary for the sampling-planner agent that depends on the new observations from the reset environment."""
+        pass
+
+    def debug_viz(self, env_ids: list[int] | None = None):
         pass
 
     """
@@ -108,9 +133,9 @@ class Agent(ABC):
     """
 
     def _init_buffers(self):
-        self._ALL_INDICES = torch.arange(self.env.num_envs, device=self.device, dtype=torch.long)
+        self._ALL_INDICES = torch.arange(self._runner.env.num_envs, device=self.device, dtype=torch.long)
         # plan buffers
-        self._plan_step = torch.zeros(self.env.num_envs, device=self.device, dtype=torch.long)
-        self._plan = torch.zeros((self.env.num_envs, self.cfg.horizon, self.action_dim), device=self.device)
+        self._plan_step = torch.zeros(self._runner.env.num_envs, device=self.device, dtype=torch.long)
+        self._plan = torch.zeros((self._runner.env.num_envs, self.cfg.horizon, self.action_dim), device=self.device)
         # env step counter
-        self.env_step_counter = torch.zeros(self.env.num_envs, device=self.device, dtype=torch.long)
+        self.env_step_counter = torch.zeros(self._runner.env.num_envs, device=self.device, dtype=torch.long)

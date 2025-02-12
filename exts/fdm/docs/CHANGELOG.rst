@@ -7,4 +7,4 @@ Changelog
 Added
 ^^^^^
 
-* Created an initial template for building an extension or project based on Isaac Lab
+* Initial version of the FDM

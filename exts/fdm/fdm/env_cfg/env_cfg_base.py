@@ -1,10 +1,12 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
 import os
-
-from omni.isaac.lab_assets import ISAACLAB_ASSETS_EXT_DIR
 
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.assets import AssetBaseCfg
@@ -19,8 +21,10 @@ from omni.isaac.lab.sensors import ContactSensorCfg, RayCasterCfg, patterns
 from omni.isaac.lab.terrains import TerrainImporterCfg
 from omni.isaac.lab.utils import configclass
 from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+from omni.isaac.lab_assets import ISAACLAB_ASSETS_DATA_DIR
 
 import fdm.mdp as mdp
+from fdm import FDM_DATA_DIR
 
 ##
 # Pre-defined configs
@@ -31,6 +35,26 @@ from omni.isaac.lab_assets.anymal import ANYMAL_D_CFG
 # NOTE: Uncomment the following imports to enable terrain generation
 # from .terrain_cfg import FDM_TERRAINS_CFG
 # from .terrain_cfg import FDM_EXTEROCEPTIVE_TERRAINS_CFG
+# from .terrain_cfg import PLANNER_TRAIN_CFG
+# from .terrain_cfg import MAZE_TERRAIN_CFG
+
+##
+# Constants
+##
+
+TERRAIN_ANALYSIS_CFG = mdp.TerrainAnalysisCfg(
+    semantic_cost_mapping=None,
+    raycaster_sensor="env_sensor",
+    viz_graph=False,
+    viz_height_map=False,
+    sample_points=30000,
+    height_diff_threshold=0.2,
+    wall_height=2.25,
+    door_filtering=True,
+    grid_resolution=0.05,
+    door_height_threshold=1.2,
+    max_terrain_size=350.0,
+)
 
 ##
 # Scene definition
@@ -41,11 +65,18 @@ from omni.isaac.lab_assets.anymal import ANYMAL_D_CFG
 class TerrainSceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
 
-    # PILLAR TERRAIN
+    # GENERATED TERRAIN
     # terrain = TerrainImporterCfg(
     #     prim_path="/World/ground",
     #     terrain_type="generator",
-    #     terrain_generator=FDM_TERRAINS_CFG,
+    #     # PILLAR TERRAIN
+    #     # terrain_generator=FDM_TERRAINS_CFG,
+    #     # STAIRS / Stepping Stones / Pillars Terrain
+    #     # terrain_generator=FDM_EXTEROCEPTIVE_TERRAINS_CFG,
+    #     # PLANNER Stairs/Ramp Terrain
+    #     terrain_generator=PLANNER_TRAIN_CFG,
+    #     # Maze Terrain
+    #     # terrain_generator=MAZE_TERRAIN_CFG,
     #     max_init_terrain_level=None,
     #     collision_group=-1,
     #     physics_material=sim_utils.RigidBodyMaterialCfg(
@@ -54,30 +85,25 @@ class TerrainSceneCfg(InteractiveSceneCfg):
     #         static_friction=1.0,
     #         dynamic_friction=1.0,
     #     ),
-    #     debug_vis=True,
-    # )
-
-    # STAIRS / Stepping Stones / Pillars Terrain
-    # terrain = TerrainImporterCfg(
-    #     prim_path="/World/ground",
-    #     terrain_type="generator",
-    #     terrain_generator=FDM_EXTEROCEPTIVE_TERRAINS_CFG,
-    #     max_init_terrain_level=None,
-    #     collision_group=-1,
-    #     physics_material=sim_utils.RigidBodyMaterialCfg(
-    #         friction_combine_mode="multiply",
-    #         restitution_combine_mode="multiply",
-    #         static_friction=1.0,
-    #         dynamic_friction=1.0,
+    #     visual_material=sim_utils.MdlFileCfg(
+    #         mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Architecture/Shingles_01.mdl",
+    #         project_uvw=True,
     #     ),
     #     debug_vis=True,
     # )
 
-    # NAVIGATION TERRAIN
+    # USD TERRAIN
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="usd",
-        usd_path=os.path.join(ISAACLAB_ASSETS_EXT_DIR, "Terrains", "navigation_terrain.usd"),
+        usd_path=os.path.join(
+            FDM_DATA_DIR, "Terrains", "navigation_terrain_wall_usd_merge_large_single_object_maze.usd"
+        ),
+        # usd_path=os.path.join(FDM_DATA_DIR, "Terrains", "navigation_terrain_wall_usd_merge_large_maze.usd"),
+        # usd_path=os.path.join(FDM_DATA_DIR, "Terrains", "navigation_terrain_wall_usd_merge_large.usd"),
+        # usd_path=os.path.join(FDM_DATA_DIR, "Terrains", "navigation_terrain_wall_usd_merge.usd"),
+        # usd_path=os.path.join(FDM_DATA_DIR, "Terrains", "navigation_terrain_wall_emptier.usd"),
+        # usd_path=os.path.join(FDM_DATA_DIR, "Terrains", "navigation_terrain.usd"),
         max_init_terrain_level=None,
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
@@ -90,27 +116,28 @@ class TerrainSceneCfg(InteractiveSceneCfg):
             mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Architecture/Shingles_01.mdl",
             project_uvw=True,
         ),
-        debug_vis=True,
+        debug_vis=False,
         usd_uniform_env_spacing=10.0,  # 10m spacing between environment origins in the usd environment
     )
+
     # robots
     robot = ANYMAL_D_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
     # sensors
     height_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
-        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 20.0)),
+        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5 m above the base for door assessment
         attach_yaw_only=True,
         pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
-        debug_vis=True,
+        debug_vis=False,
         mesh_prim_paths=["/World/ground"],
     )
-    contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=6, debug_vis=True)
+    contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=6, debug_vis=False)
     # lights
     light = AssetBaseCfg(
         prim_path="/World/light",
-        spawn=sim_utils.DistantLightCfg(
+        spawn=sim_utils.DomeLightCfg(
             color=(1.0, 1.0, 1.0),
-            intensity=1000.0,
+            intensity=2000.0,
         ),
     )
 
@@ -137,7 +164,8 @@ class ActionsCfg:
             asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True
         ),
         low_level_decimation=4,
-        low_level_policy_file=os.path.join(ISAACLAB_ASSETS_EXT_DIR, "Policies", "ANYmal-D", "policy_new.pt"),
+        low_level_policy_file=os.path.join(ISAACLAB_ASSETS_DATA_DIR, "Policies", "ANYmal-D", "policy_new.pt"),
+        low_level_obs_group="policy",
     )
 
 
@@ -161,7 +189,7 @@ class ObservationsCfg:
         joint_vel = ObsTerm(func=mdp.joint_vel_rel, noise=Unoise(n_min=-1.5, n_max=1.5))
         actions = ObsTerm(func=mdp.last_low_level_action, params={"action_term": "velocity_cmd"})
         height_scan = ObsTerm(
-            func=mdp.height_scan,
+            func=mdp.height_scan_bounded,
             params={"sensor_cfg": SceneEntityCfg("height_scanner")},
             clip=(-1.0, 1.0),
         )
@@ -205,17 +233,19 @@ class ObservationsCfg:
         base_orientation = ObsTerm(func=mdp.base_orientation_xyzw)
         base_collision = ObsTerm(
             func=mdp.base_collision,
-            params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0},
+            params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["base"]), "threshold": 1.0},
+            # params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["base", "RF_THIGH", "LF_THIGH", "RH_THIGH", "LH_THIGH"]), "threshold": 1.0},
         )
         # add additional terms below, first term have to stay the default and are used in the code
-        engery_consumption = ObsTerm(func=mdp.energy_consumption)
+        hard_contact = ObsTerm(func=mdp.energy_consumption, params={"energy_scale_factor": 0.001})
         friction = ObsTerm(
-            func=mdp.friction,
+            func=mdp.FrictionObservation(),
             params={"asset_cfg": SceneEntityCfg("robot", body_names=["LF_FOOT", "LH_FOOT", "RF_FOOT", "RH_FOOT"])},
         )
 
         def __post_init__(self):
             self.concatenate_terms = True
+            self.enable_corruption = True
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
@@ -233,7 +263,7 @@ class EventsCfg:
 
     # startup
     physics_material = EventTerm(
-        func=mdp.randomize_rigid_body_material,
+        func=mdp.randomize_rigid_body_material_uniform_static_dynamic_friction,
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=["LF_FOOT", "LH_FOOT", "RF_FOOT", "RH_FOOT"]),
@@ -257,13 +287,8 @@ class EventsCfg:
 
     reset_base = EventTerm(
         func=mdp.TerrainAnalysisRootReset(
-            cfg=mdp.TerrainAnalysisCfg(
-                semantic_cost_mapping=None,
-                raycaster_sensor="env_sensor",
-                viz_graph=True,
-                sample_points=10000,
-                height_diff_threshold=0.2,
-            )
+            cfg=TERRAIN_ANALYSIS_CFG,
+            robot_dim=0.6,
         ),
         mode="reset",
         params={
@@ -298,7 +323,8 @@ class TerminationsCfg:
     # time_out = DoneTerm(func=mdp.time_out, time_out=True)
     base_contact = DoneTerm(
         func=mdp.illegal_contact_delayed,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0, "delay": 1},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["base"]), "threshold": 1.0, "delay": 1},
+        # params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["base", "RF_THIGH", "LF_THIGH", "RH_THIGH", "LH_THIGH"]), "threshold": 1.0, "delay": 1},
     )
 
 
@@ -323,6 +349,11 @@ class FDMCfg(ManagerBasedRLEnvCfg):
 
     def __post_init__(self):
         """Post initialization."""
+        # change ANYmal asset
+        # self.scene.robot.spawn.usd_path = f"{FDM_DATA_DIR}/ANYmal-D/anymal_d.usd"
+        self.scene.robot.spawn.usd_path = f"{FDM_DATA_DIR}/ANYmal-D-New/anymal_d.usd"
+        # set seed
+        self.seed = 1234
         # general settings
         self.decimation = 4
         # simulation settings
@@ -330,8 +361,10 @@ class FDMCfg(ManagerBasedRLEnvCfg):
         self.sim.disable_contact_processing = True
         self.sim.physics_material.static_friction = 1.0
         self.sim.physics_material.dynamic_friction = 1.0
-        self.sim.physics_material.friction_combine_mode = "multiply"
-        self.sim.physics_material.restitution_combine_mode = "multiply"
+        self.sim.physics_material.friction_combine_mode = "min"  # important so that the robots are slipping
+        self.sim.physics_material.restitution_combine_mode = "min"
+        # set render interval correctly
+        self.sim.render_interval = self.decimation
         # view settings
         self.viewer.eye = (-5.0, 0, 4)
         # update sensor update periods

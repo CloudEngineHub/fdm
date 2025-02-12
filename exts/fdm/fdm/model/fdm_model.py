@@ -1,4 +1,8 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
@@ -10,8 +14,9 @@ from typing import TYPE_CHECKING
 
 from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall
 
+from omni.isaac.lab.utils import math as math_utils
+
 from .model_base import Model
-from .model_base_cfg import BaseModelCfg
 from .utils import EmpiricalNormalization, L2Loss
 
 if TYPE_CHECKING:
@@ -25,25 +30,23 @@ class FDMModel(Model):
     def __init__(self, cfg: FDMBaseModelCfg, device: str):
         super().__init__(cfg, device)
 
-        # build encoder layers
-        self.state_obs_proprioceptive_encoder = self._construct_layer(self.cfg.state_obs_proprioception_encoder)
-        self.obs_exteroceptive_encoder = self._construct_layer(self.cfg.obs_exteroceptive_encoder)
-        if self.cfg.action_encoder is not None:
-            self.action_encoder = self._construct_layer(self.cfg.action_encoder)
-        else:
-            self.action_encoder = None
-        if self.cfg.add_obs_exteroceptive_encoder is not None:
-            self.add_obs_exteroceptive_encoder = self._construct_layer(self.cfg.add_obs_exteroceptive_encoder)
-        else:
-            self.add_obs_exteroceptive_encoder = None
+        # setup layers
+        self._setup_layers()
 
-        # build prediction layers
-        self.recurrence = self._construct_layer(self.cfg.recurrence)
-        self.state_predictor = self._construct_layer(self.cfg.state_predictor)
-        self.collision_predictor = self._construct_layer(self.cfg.collision_predictor)
-        self.energy_predictor = self._construct_layer(self.cfg.energy_predictor)
-        self.friction_predictor = self._construct_layer(self.cfg.friction_predictor)
-        self.sigmoid = nn.Sigmoid()
+        # adjustments to be jit compiled
+        # -- copy elements from the config necessary for the forward loop
+        self.param_command_timestep = self.cfg.command_timestep
+        self.param_unified_failure_prediction = self.cfg.unified_failure_prediction
+        self.param_collision_threshold = self.cfg.collision_threshold
+        # -- checks if recursive unit or mlp
+        if isinstance(self.state_obs_proprioceptive_encoder, (nn.GRU, nn.LSTM)):
+            self.state_encoder_forward = self.state_encoder_forward_rnn
+        else:
+            self.state_encoder_forward = self.state_encoder_forward_mlp
+        if isinstance(self.recurrence, (nn.GRU, nn.LSTM)):
+            self.recurrence_forward = self.recurrence_forward_rnn
+        else:
+            self.recurrence_forward = self.recurrence_forward_mlp
 
         # include empirical normalizer for the proprioceptive observations
         self.proprioceptive_normalizer = EmpiricalNormalization(self.cfg.empirical_normalization_dim)
@@ -79,13 +82,9 @@ class FDMModel(Model):
         self.energy_loss = nn.MSELoss()
 
         # init metrics
-        self.metric_presision = BinaryPrecision(threshold=0.5)
-        self.metric_recall = BinaryRecall(threshold=0.5)
-        self.metric_accuracy = BinaryAccuracy(threshold=0.5)
-
-        # init velocity and acceleration limit buffer --> filled by maximum oberserved simulation values
-        self.acceleration_limits = torch.zeros(3, device=self.device)
-        self.velocity_limits = torch.zeros(3, device=self.device)
+        self.metric_presision = BinaryPrecision(threshold=self.cfg.collision_threshold)
+        self.metric_recall = BinaryRecall(threshold=self.cfg.collision_threshold)
+        self.metric_accuracy = BinaryAccuracy(threshold=self.cfg.collision_threshold)
 
         # learning progress
         self._learning_progress_step = 1.0
@@ -98,6 +97,38 @@ class FDMModel(Model):
             table.add_row([layer, count])
         print(table)
 
+    def _setup_layers(self):
+        # build encoder layers
+        self.state_obs_proprioceptive_encoder = self._construct_layer(self.cfg.state_obs_proprioception_encoder)
+        self.obs_exteroceptive_encoder = self._construct_layer(self.cfg.obs_exteroceptive_encoder)
+        if self.cfg.action_encoder is not None:
+            self.action_encoder = self._construct_layer(self.cfg.action_encoder)
+        else:
+            self.action_encoder = None
+        if self.cfg.add_obs_exteroceptive_encoder is not None:
+            self.add_obs_exteroceptive_encoder = self._construct_layer(self.cfg.add_obs_exteroceptive_encoder)
+        else:
+            self.add_obs_exteroceptive_encoder = None
+
+        # build prediction layers
+        self.recurrence = self._construct_layer(self.cfg.recurrence)
+        self.state_predictor = self._construct_layer(self.cfg.state_predictor)
+        self.collision_predictor = self._construct_layer(self.cfg.collision_predictor)
+        self.energy_predictor = self._construct_layer(self.cfg.energy_predictor)
+        self.friction_predictor = self._construct_layer(self.cfg.friction_predictor)
+        self.sigmoid = nn.Sigmoid()
+
+        # init velocity and acceleration limit buffer --> filled by maximum oberserved simulation values
+        self.register_buffer("acceleration_limits", torch.zeros(3))
+        self.register_buffer("velocity_limits", torch.zeros(3))
+        self.register_buffer("hard_contact_obs_limits", torch.zeros(2))
+        # self.acceleration_limits = torch.zeros(3, device=self.device)
+        # self.velocity_limits = torch.zeros(3, device=self.device)
+        # self.hard_contact_obs_limits = torch.zeros(2, device=self.device)
+
+        # set initial value for minimum torque to inf
+        self.hard_contact_obs_limits[0] = torch.inf
+
     """
     Update physical limits
     """
@@ -108,6 +139,10 @@ class FDMModel(Model):
 
     def set_velocity_limits(self, velocity_limits: torch.Tensor):
         self.velocity_limits = torch.maximum(self.velocity_limits, velocity_limits.to(self.device))
+
+    def set_hard_contact_obs_limits(self, min_hard_contact_obs: torch.Tensor, max_hard_contact_obs: torch.Tensor):
+        self.hard_contact_obs_limits[0] = torch.min(min_hard_contact_obs, self.hard_contact_obs_limits[0])[0]
+        self.hard_contact_obs_limits[1] = torch.max(max_hard_contact_obs, self.hard_contact_obs_limits[1])[0]
 
     """
     Learning progress update
@@ -121,7 +156,9 @@ class FDMModel(Model):
     Forward function of the dynamics model
     """
 
-    def forward(self, model_in: tuple[torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(
+        self, model_in: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Forward pass of the model
 
@@ -146,18 +183,7 @@ class FDMModel(Model):
         # Encode inputs
         ###
 
-        # encode state and proprioceptive observations
-        if isinstance(self.cfg.state_obs_proprioception_encoder, BaseModelCfg.MLPConfig):
-            # MLP - only work with history equal to 1
-            encoded_state_obs_proprioceptive = self.state_obs_proprioceptive_encoder(
-                torch.concatenate([state, obs_proprioceptive], dim=2)
-            )
-        else:
-            # recurrent - work with history > 1
-            # TODO: for GRU the same, for S4RNN check if the same as the hidden
-            encoded_state_obs_proprioceptive, _ = self.state_obs_proprioceptive_encoder(
-                torch.concatenate([state, obs_proprioceptive], dim=2)
-            )
+        encoded_state_obs_proprioceptive = self.state_encoder_forward(state, obs_proprioceptive)
 
         # encode exteroceptive observations
         encoded_obs_exteroceptive = self.obs_exteroceptive_encoder(obs_extereoceptive)
@@ -185,24 +211,12 @@ class FDMModel(Model):
         # Predict
         ###
 
-        if isinstance(self.cfg.recurrence, BaseModelCfg.MLPConfig):
-            forward_predict_state_obs = self.recurrence(
-                torch.concatenate([encoded_actions.flatten(start_dim=1), encoded_state_obs], dim=1)
-            )
-        else:
-            # set hidden state
-            initial_hidden_state = torch.broadcast_to(
-                encoded_state_obs, (self.cfg.recurrence.num_layers, *encoded_state_obs.shape)
-            ).contiguous()
-
-            # recurrent forward predict encoding of state and obsverations given the commands
-            forward_predict_state_obs, _ = self.recurrence(encoded_actions, initial_hidden_state)
-            forward_predict_state_obs = forward_predict_state_obs.reshape(-1, forward_predict_state_obs.shape[2])
+        forward_predict_state_obs = self.recurrence_forward(encoded_actions, encoded_state_obs)
 
         # predict the probability of collision along the trajectory
         collision_prob_traj = self.sigmoid(self.collision_predictor.forward(forward_predict_state_obs))
         collision_prob_traj = collision_prob_traj.view(batch_size, traj_len)
-        if self.cfg.unified_failure_prediction:
+        if self.param_unified_failure_prediction:
             collision_prob_traj = torch.max(collision_prob_traj, dim=-1)[0]
 
         # energy prediction
@@ -217,6 +231,36 @@ class FDMModel(Model):
         state_traj = torch.cumsum(rel_state_transitions, dim=1)
 
         return state_traj, collision_prob_traj, energy_traj
+
+    @torch.jit.export
+    def state_encoder_forward_mlp(self, state: torch.Tensor, obs_proprioceptive: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the state encoder for the MLP"""
+        return self.state_obs_proprioceptive_encoder(torch.concatenate([state, obs_proprioceptive], dim=2))
+
+    @torch.jit.export
+    def state_encoder_forward_rnn(self, state: torch.Tensor, obs_proprioceptive: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the state encoder for the RNN"""
+        return self.state_obs_proprioceptive_encoder(torch.concatenate([state, obs_proprioceptive], dim=2))[0]
+
+    @torch.jit.export
+    def recurrence_forward_mlp(self, actions: torch.Tensor, encoded_state_obs: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the recurrence for the MLP"""
+        return self.recurrence(torch.concatenate([actions.flatten(start_dim=1), encoded_state_obs], dim=1))
+
+    @torch.jit.export
+    def recurrence_forward_rnn(self, actions: torch.Tensor, encoded_state_obs: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the recurrence for the RNN"""
+        initial_hidden_state = torch.broadcast_to(
+            encoded_state_obs, (self.recurrence.num_layers, *encoded_state_obs.shape)
+        ).contiguous()
+
+        # recurrent forward predict encoding of state and obsverations given the commands
+        forward_predict_state_obs, _ = self.recurrence(actions, initial_hidden_state)
+        return forward_predict_state_obs.reshape(-1, forward_predict_state_obs.shape[2])
+
+    """
+    Loss and Evaluation Functions
+    """
 
     def loss(
         self,
@@ -236,59 +280,21 @@ class FDMModel(Model):
 
         # stop loss - do not move when collision has happenend
         # note: has to be called before the collision probability loss, because there can be unified
-        stop_loss = self.stop_loss(
-            pred_state_traj[target_collision_state_traj == 1], target_state_traj[target_collision_state_traj == 1]
-        )
-        stop_loss = torch.tensor(0.0, device=self.device) if torch.isnan(stop_loss) else stop_loss
+        stop_loss = self._stop_loss(pred_state_traj, target_collision_state_traj, target_state_traj)
 
         # Collision probability loss (CLE)
-        if self.cfg.unified_failure_prediction:
+        if self.param_unified_failure_prediction:
             target_collision_state_traj = torch.max(target_collision_state_traj, dim=-1)[0]
         collision_prob_loss = self.probability_loss(pred_collision_prob_traj, target_collision_state_traj)
 
         # Position loss (MSE)
-        if self.cfg.weight_inverse_distance:
-            position_loss_list = [
-                (
-                    (pred_state_traj[:, idx, :2] - target_state_traj[:, idx, :2]) ** 2
-                    / (torch.norm(target_state_traj[:, idx, :2], dim=-1) + 1e-6).unsqueeze(1)
-                ).mean()
-                * torch.norm(target_state_traj[:, idx, :2], dim=-1).mean()
-                for idx in range(pred_state_traj.shape[1])
-            ]
-        else:
-            position_loss_list = [
-                self.position_loss(pred_state_traj[:, idx, :2], target_state_traj[:, idx, :2])
-                for idx in range(pred_state_traj.shape[1])
-            ]
-        position_loss = torch.sum(torch.stack(position_loss_list), dim=0)  # / pred_state_traj.shape[1]
+        position_loss, position_loss_list = self._position_loss(pred_state_traj, target_state_traj)
 
         # Heading loss (MSE)
-        heading_loss_list = [
-            self.heading_loss(pred_state_traj[:, idx, 2:], target_state_traj[:, idx, 2:])
-            for idx in range(pred_state_traj.shape[1])
-        ]
-        heading_loss = torch.sum(torch.stack(heading_loss_list), dim=0)  # / pred_state_traj.shape[1]
+        heading_loss, heading_loss_list = self._heading_loss(pred_state_traj, target_state_traj)
 
-        # get velocity
-        position_delta = torch.zeros((pred_state_traj.shape[0], pred_state_traj.shape[1], 3), device=self.device)
-        # convert heading representation to radians
-        pred_heading_change = torch.atan2(pred_state_traj[:, :, 2], pred_state_traj[:, :, 3])
-        position_delta[:, 1:, :2] = pred_state_traj[:, 1:, :2] - pred_state_traj[:, :-1, :2]
-        position_delta[:, 1:, 2] = pred_heading_change[:, 1:] - pred_heading_change[:, :-1]
-        position_delta[:, 0, :2] = pred_state_traj[:, 0, :2]
-        position_delta[:, 0, 2] = pred_heading_change[:, 0]
-        velocity = position_delta / self.cfg.command_timestep
-
-        # Velocity loss (sum of violations)
-        velocity_loss = torch.abs(velocity) - self.velocity_limits
-        velocity_loss = torch.sum(velocity_loss.clip(min=0.0)) / pred_state_traj.shape[0]
-
-        # get acceleration
-        acceleration = (velocity[:, 1:] - velocity[:, :-1]) / self.cfg.command_timestep
-        # Acceleration loss (sum of violations)
-        acceleration_loss = torch.abs(acceleration) - self.acceleration_limits
-        acceleration_loss = torch.sum(acceleration_loss.clip(min=0.0))
+        # get the velocity and acceleration losses
+        velocity_loss, acceleration_loss = self._vel_acc_loss(pred_state_traj, target_collision_state_traj)
 
         # Energy loss (MSE)
         energy_loss = self.energy_loss(energy_traj.squeeze(-1), target_energy_traj)
@@ -335,15 +341,17 @@ class FDMModel(Model):
         # save meta data
         meta = {
             f"{mode}{suffix} Loss [Batch]": loss.item(),
-            f"{mode}{suffix} Collision Loss [Batch]": collision_prob_loss.item(),
-            f"{mode}{suffix} Position Loss [Batch]": position_loss.item(),
-            f"{mode}{suffix} Heading Loss [Batch]": heading_loss.item(),
-            f"{mode}{suffix} Velocity Loss [Batch]": velocity_loss.item(),
-            f"{mode}{suffix} Acceleration Loss [Batch]": acceleration_loss.item(),
             f"{mode}{suffix} Stop Loss [Batch]": stop_loss.item(),
-            f"{mode}{suffix} Energy Loss [Batch]": energy_loss.item(),
         }
         if mode != "test":  # avoid overflow of information
+            meta = meta | {
+                f"{mode}{suffix} Position Loss [Batch]": position_loss.item(),
+                f"{mode}{suffix} Heading Loss [Batch]": heading_loss.item(),
+                f"{mode}{suffix} Collision Loss [Batch]": collision_prob_loss.item(),
+                f"{mode}{suffix} Velocity Loss [Batch]": velocity_loss.item(),
+                f"{mode}{suffix} Acceleration Loss [Batch]": acceleration_loss.item(),
+                f"{mode}{suffix} Energy Loss [Batch]": energy_loss.item(),
+            }
             [
                 meta.update({f"{mode}{suffix} Position Loss Horizon {idx} [Batch]": position_loss_list[idx].item()})
                 for idx in range(0, len(position_loss_list), int(len(position_loss_list) / 5))
@@ -352,8 +360,8 @@ class FDMModel(Model):
                 meta.update({f"{mode}{suffix} Heading Loss Horizon {idx} [Batch]": heading_loss_list[idx].item()})
                 for idx in range(0, len(heading_loss_list), int(len(heading_loss_list) / 5))
             ]
-        meta.update({f"{mode}{suffix} Position Loss Horizon Last [Batch]": position_loss_list[-1].item()})
-        meta.update({f"{mode}{suffix} Heading Loss Horizon Last [Batch]": heading_loss_list[-1].item()})
+            meta.update({f"{mode}{suffix} Position Loss Horizon Last [Batch]": position_loss_list[-1].item()})
+            meta.update({f"{mode}{suffix} Heading Loss Horizon Last [Batch]": heading_loss_list[-1].item()})
 
         if any(list(self.cfg.progress_scaling.values())) and mode == "train":
             meta["Learning Progress Scaling"] = self._learning_progress_step * (self._update_step - 1)
@@ -369,70 +377,494 @@ class FDMModel(Model):
         mode: str = "train",
         suffix: str = "",
     ) -> dict:
-        pred_state_traj, pred_collision_prob_traj, _ = model_out[0], model_out[1], model_out[2]
+        pred_state_traj, pred_collision_prob_traj = model_out[0], model_out[1]
         target_state_traj, target_collision_state_traj = target[..., :4].to(self.device), target[..., 4].to(self.device)
+        # get the indices of the samples in collision
+        collision_idx = torch.any(target_collision_state_traj == 1, dim=1)
 
         if meta is None:
             meta = {}
 
         # compare to perfect velocity tracking error when eval mode
-        if (mode == "eval" or mode == "test") and "eval Position Loss [Batch]" in meta:
+        meta = self._eval_perf_velocity(
+            meta, mode, eval_in, target_state_traj, pred_state_traj, pred_collision_prob_traj, collision_idx, suffix
+        )
+
+        # Heading error in degrees
+        meta = self._eval_heading_degrees(meta, mode, pred_state_traj, target_state_traj, suffix)
+
+        # Position offsets
+        meta = self._eval_position_offsets(
+            meta, mode, pred_state_traj, pred_collision_prob_traj, target_state_traj, collision_idx, suffix
+        )
+
+        # collision metrics
+        meta = self._eval_collision_pred(meta, mode, pred_collision_prob_traj, target_collision_state_traj, suffix)
+
+        return meta
+
+    """
+    Loss Components
+    """
+
+    def _vel_acc_loss(self, pred_state_traj, target_collision_state_traj) -> tuple[torch.Tensor, torch.Tensor]:
+        # NOTE: the acceleration and velocity limits are calculated in local frame, the overall size should not changed
+        #       outcome of the loss function
+
+        # get the indices of the samples in collision
+        if not self.param_unified_failure_prediction:
+            collision_idx = torch.any(target_collision_state_traj == 1, dim=1)
+        else:
+            collision_idx = target_collision_state_traj.to(torch.bool)
+
+        # get change in position and heading
+        position_delta = torch.cat(
+            [pred_state_traj[:, 0, :2].unsqueeze(1), pred_state_traj[:, 1:, :2] - pred_state_traj[:, :-1, :2]], dim=1
+        )
+        # convert heading representation to radians
+        pred_heading_change = torch.atan2(pred_state_traj[:, :, 2], pred_state_traj[:, :, 3])
+        heading_delta = torch.cat(
+            [pred_heading_change[:, 0].unsqueeze(1), pred_heading_change[:, 1:] - pred_heading_change[:, :-1]], dim=1
+        )
+        # enforce periodicity of the heading
+        heading_delta = torch.abs(math_utils.wrap_to_pi(heading_delta))
+        # combine position and heading delta
+        velocity = torch.cat([position_delta, heading_delta.unsqueeze(2)], dim=2) / self.param_command_timestep
+
+        # Velocity loss (sum of violations)
+        velocity_loss = (torch.abs(velocity[~collision_idx]) - self.velocity_limits).clip(min=0.0)
+        velocity_loss = torch.mean(velocity_loss[velocity_loss > 0.0])
+        velocity_loss = (
+            torch.tensor(0.0, device=self.device)
+            if torch.isnan(velocity_loss) or torch.isinf(velocity_loss)
+            else velocity_loss
+        )
+
+        # get acceleration
+        acceleration = (velocity[:, 1:] - velocity[:, :-1]) / self.param_command_timestep
+        # Acceleration loss (sum of violations)
+        acceleration_loss = (torch.abs(acceleration[~collision_idx]) - self.acceleration_limits).clip(min=0.0)
+        acceleration_loss = torch.mean(acceleration_loss[acceleration_loss > 0.0])
+        acceleration_loss = (
+            torch.tensor(0.0, device=self.device)
+            if torch.isnan(acceleration_loss) or torch.isinf(velocity_loss)
+            else acceleration_loss
+        )
+
+        return velocity_loss, acceleration_loss
+
+    def _heading_loss(
+        self, pred_state_traj: torch.Tensor, target_state_traj: torch.Tensor
+    ) -> tuple[torch.Tensor, list[torch.Tensor]]:
+        heading_loss_list = [
+            self.heading_loss(pred_state_traj[:, idx, 2:], target_state_traj[:, idx, 2:])
+            for idx in range(pred_state_traj.shape[1])
+        ]
+        heading_loss = torch.sum(torch.stack(heading_loss_list), dim=0)  # / pred_state_traj.shape[1]
+        return heading_loss, heading_loss_list
+
+    def _position_loss(
+        self, pred_state_traj: torch.Tensor, target_state_traj: torch.Tensor
+    ) -> tuple[torch.Tensor, list[torch.Tensor]]:
+        if self.cfg.weight_inverse_distance:
+            position_loss_list = [
+                (
+                    (pred_state_traj[:, idx, :2] - target_state_traj[:, idx, :2]) ** 2
+                    / (torch.norm(target_state_traj[:, idx, :2], dim=-1) + 1e-6).unsqueeze(1)
+                ).mean()
+                * torch.norm(target_state_traj[:, idx, :2], dim=-1).mean()
+                for idx in range(pred_state_traj.shape[1])
+            ]
+        else:
+            position_loss_list = [
+                self.position_loss(pred_state_traj[:, idx, :2], target_state_traj[:, idx, :2])
+                for idx in range(pred_state_traj.shape[1])
+            ]
+        position_loss = torch.sum(torch.stack(position_loss_list), dim=0)  # / pred_state_traj.shape[1]
+        return position_loss, position_loss_list
+
+    def _stop_loss(
+        self, pred_state_traj: torch.Tensor, target_collision_state_traj: torch.Tensor, target_state_traj: torch.Tensor
+    ) -> torch.Tensor:
+        stop_loss = self.stop_loss(
+            pred_state_traj[target_collision_state_traj == 1], target_state_traj[target_collision_state_traj == 1]
+        )
+        stop_loss = torch.tensor(0.0, device=self.device) if torch.isnan(stop_loss) else stop_loss
+        return stop_loss
+
+    """
+    Eval metric components
+    """
+
+    def _eval_perf_velocity(
+        self,
+        meta: dict,
+        mode: str,
+        eval_in: torch.Tensor | tuple[torch.Tensor, torch.Tensor],
+        target_state_traj: torch.Tensor,
+        pred_state_traj: torch.Tensor,
+        pred_collision_prob_traj: torch.Tensor,
+        collision_idx: torch.Tensor,
+        suffix: str = "",
+    ) -> dict:
+        if mode == "eval" or mode == "test" or mode == "plot":
             if isinstance(eval_in, (tuple, list)):
                 eval_in = eval_in[0].to(self.device)
             else:
                 eval_in = eval_in.to(self.device)
-            constant_perf_vel_loss = self.perfect_velocity_position_loss(eval_in, target_state_traj).item()
-            model_loss = self.perfect_velocity_position_loss(pred_state_traj, target_state_traj).item()
-            meta[f"{mode}{suffix} Perfect Velocity Position Loss non-collision samples [Batch]"] = (
-                model_loss / constant_perf_vel_loss
-            )
+            constant_perf_vel_loss = self.perfect_velocity_position_loss(
+                eval_in[..., :2], target_state_traj[..., :2]
+            ).item()
+            model_loss = self.perfect_velocity_position_loss(
+                pred_state_traj[..., :2], target_state_traj[..., :2]
+            ).item()
+            meta[f"{mode}{suffix} Perfect Velocity Position Loss [Batch]"] = model_loss / constant_perf_vel_loss
 
-        # Heading error in degrees
-        meta[f"{mode}{suffix} Heading Degree Error [Batch]"] = torch.rad2deg(
-            torch.mean(
-                torch.abs(
-                    torch.atan2(pred_state_traj[:, :, 2], pred_state_traj[:, :, 3])
-                    - torch.atan2(target_state_traj[:, :, 2], target_state_traj[:, :, 3])
-                )
-            )
-        ).item()
+            if mode == "plot":
+                # get the error in the position
+                pv_pos_error = torch.norm(eval_in[..., :2] - target_state_traj[..., :2], dim=-1)
 
-        # get the indices of the samples in collision
-        collision_idx = torch.any(target_collision_state_traj == 1, dim=1)
+                # get the predicted collision samples
+                pred_collision_idx = torch.any(pred_collision_prob_traj > self.cfg.collision_threshold, dim=1)
+
+                # run the evaluation with distance intervals
+                for distance in torch.arange(
+                    self.cfg.eval_distance_interval,
+                    int(torch.max(torch.norm(target_state_traj[:, -1, :2], dim=1)).item())
+                    + self.cfg.eval_distance_interval,
+                    self.cfg.eval_distance_interval,
+                ):
+                    samples_within_distance = torch.all(
+                        torch.vstack((
+                            torch.norm(target_state_traj[:, -1, :2], dim=1) - self.cfg.eval_distance_interval
+                            < distance,
+                            torch.norm(target_state_traj[:, -1, :2], dim=1) > distance,
+                        )),
+                        dim=0,
+                    )
+                    if torch.sum(samples_within_distance) == 0:
+                        continue
+
+                    # mean of position offset
+                    meta[
+                        f"{mode}{suffix} Perfect Velocity Position Offset"
+                        f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Batch]"
+                    ] = torch.mean(pv_pos_error[samples_within_distance, -1]).item()
+                    if torch.sum(samples_within_distance) > 1:
+                        meta[
+                            f"{mode}{suffix} Perfect Velocity Position Offset Std"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Batch]"
+                        ] = torch.std(pv_pos_error[samples_within_distance, -1]).item()
+                    meta[
+                        f"{mode}{suffix} Relative Perfect Velocity Position Offset"
+                        f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Batch]"
+                    ] = (
+                        torch.mean(
+                            torch.norm(
+                                pred_state_traj[samples_within_distance, -1, :2]
+                                - target_state_traj[samples_within_distance, -1, :2],
+                                dim=-1,
+                            )
+                        )
+                        / meta[
+                            f"{mode}{suffix} Perfect Velocity Position Offset"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Batch]"
+                        ]
+                    ).item()
+
+                    # split for collision and non-collision samples
+                    if torch.sum(collision_idx[samples_within_distance]) > 0:
+                        meta[
+                            f"{mode}{suffix} Perfect Velocity Position Offset"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Collision]"
+                        ] = torch.mean(pv_pos_error[collision_idx & samples_within_distance, -1]).item()
+                    if torch.sum(collision_idx[samples_within_distance]) > 1:
+                        meta[
+                            f"{mode}{suffix} Perfect Velocity Position Offset Std"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Collision]"
+                        ] = torch.std(pv_pos_error[collision_idx & samples_within_distance, -1]).item()
+
+                    if torch.sum(~collision_idx[samples_within_distance]) > 0:
+                        meta[
+                            f"{mode}{suffix} Perfect Velocity Position Offset"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Non-Collision]"
+                        ] = torch.mean(pv_pos_error[~collision_idx & samples_within_distance, -1]).item()
+                    if torch.sum(~collision_idx[samples_within_distance]) > 1:
+                        meta[
+                            f"{mode}{suffix} Perfect Velocity Position Offset Std"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Non-Collision]"
+                        ] = torch.std(pv_pos_error[~collision_idx & samples_within_distance, -1]).item()
+
+                    # split for predicted collision samples
+                    if torch.sum(pred_collision_idx[samples_within_distance]) > 0:
+                        meta[
+                            f"{mode}{suffix} Perfect Velocity Position Offset"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Pred Collision]"
+                        ] = torch.mean(pv_pos_error[pred_collision_idx & samples_within_distance, -1]).item()
+                    if torch.sum(pred_collision_idx[samples_within_distance]) > 1:
+                        meta[
+                            f"{mode}{suffix} Perfect Velocity Position Offset Std"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Pred Collision]"
+                        ] = torch.std(pv_pos_error[pred_collision_idx & samples_within_distance, -1]).item()
+
+                    if torch.sum(~pred_collision_idx[samples_within_distance]) > 0:
+                        meta[
+                            f"{mode}{suffix} Perfect Velocity Position Offset"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Pred Non-Collision]"
+                        ] = torch.mean(pv_pos_error[~pred_collision_idx & samples_within_distance, -1]).item()
+                    if torch.sum(~pred_collision_idx[samples_within_distance]) > 1:
+                        meta[
+                            f"{mode}{suffix} Perfect Velocity Position Offset Std"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Pred Non-Collision]"
+                        ] = torch.std(pv_pos_error[~pred_collision_idx & samples_within_distance, -1]).item()
+
+                # run the evaluation for the individual steps
+                for idx in range(self.cfg.prediction_horizon):
+                    meta[f"{mode}{suffix} Perfect Velocity Position Offset {idx} [Batch]"] = torch.mean(
+                        pv_pos_error[:, idx]
+                    ).item()
+                    meta[f"{mode}{suffix} Perfect Velocity Position Offset Std {idx} [Batch]"] = torch.std(
+                        pv_pos_error[:, idx]
+                    ).item()
+                    meta[f"{mode}{suffix} Relative Perfect Velocity Position Offset {idx} [Batch]"] = (
+                        torch.mean(torch.norm(pred_state_traj[:, idx, :2] - target_state_traj[:, idx, :2], dim=-1))
+                        / meta[f"{mode}{suffix} Perfect Velocity Position Offset {idx} [Batch]"]
+                    ).item()
+
+                    # split for collision and non-collision samples
+                    if torch.sum(collision_idx) > 0:
+                        meta[f"{mode}{suffix} Perfect Velocity Position Offset {idx} [Collision]"] = torch.mean(
+                            pv_pos_error[collision_idx, idx]
+                        ).item()
+                    if torch.sum(collision_idx) > 1:
+                        meta[f"{mode}{suffix} Perfect Velocity Position Offset Std {idx} [Collision]"] = torch.std(
+                            pv_pos_error[collision_idx, idx]
+                        ).item()
+
+                    if torch.sum(~collision_idx) > 0:
+                        meta[f"{mode}{suffix} Perfect Velocity Position Offset {idx} [Non-Collision]"] = torch.mean(
+                            pv_pos_error[~collision_idx, idx]
+                        ).item()
+                    if torch.sum(~collision_idx) > 1:
+                        meta[f"{mode}{suffix} Perfect Velocity Position Offset Std {idx} [Non-Collision]"] = torch.std(
+                            pv_pos_error[~collision_idx, idx]
+                        ).item()
+
+                    # split for predicted collision and non-collision samples
+                    if torch.sum(pred_collision_idx) > 0:
+                        meta[f"{mode}{suffix} Perfect Velocity Position Offset {idx} [Pred Collision]"] = torch.mean(
+                            pv_pos_error[pred_collision_idx, idx]
+                        ).item()
+                    if torch.sum(pred_collision_idx) > 1:
+                        meta[f"{mode}{suffix} Perfect Velocity Position Offset Std {idx} [Pred Collision]"] = torch.std(
+                            pv_pos_error[pred_collision_idx, idx]
+                        ).item()
+
+                    if torch.sum(~pred_collision_idx) > 0:
+                        meta[f"{mode}{suffix} Perfect Velocity Position Offset {idx} [Pred Non-Collision]"] = (
+                            torch.mean(pv_pos_error[~pred_collision_idx, idx]).item()
+                        )
+                    if torch.sum(~pred_collision_idx) > 1:
+                        meta[f"{mode}{suffix} Perfect Velocity Position Offset Std {idx} [Pred Non-Collision]"] = (
+                            torch.std(pv_pos_error[~pred_collision_idx, idx]).item()
+                        )
+
+        return meta
+
+    def _eval_heading_degrees(
+        self, meta: dict, mode: str, pred_state_traj: torch.Tensor, target_state_traj: torch.Tensor, suffix: str = ""
+    ) -> dict:
+        yaw_diff = torch.abs(
+            torch.atan2(pred_state_traj[:, :, 2], pred_state_traj[:, :, 3])
+            - torch.atan2(target_state_traj[:, :, 2], target_state_traj[:, :, 3])
+        )
+        # enforce periodicity of the heading
+        yaw_diff = math_utils.wrap_to_pi(yaw_diff)
+        meta[f"{mode}{suffix} Heading Degree Error [Batch]"] = torch.rad2deg(torch.mean(yaw_diff)).item()
+        return meta
+
+    def _eval_position_offsets(
+        self,
+        meta: dict,
+        mode: str,
+        pred_state_traj: torch.Tensor,
+        pred_collision_prob_traj: torch.Tensor,
+        target_state_traj: torch.Tensor,
+        collision_idx: torch.Tensor,
+        suffix: str = "",
+    ) -> dict:
         # Offset in meters w.r.t. the target position relative to the traveled distance
         position_delta = torch.norm(pred_state_traj[:, -1, :2] - target_state_traj[:, -1, :2], dim=-1)
         distances = torch.norm(target_state_traj[:, -1, :2], dim=-1)
         rel_position_delta = position_delta / distances
-        for distance in range(1, int(torch.max(distances).item()) + 1):
-            samples_within_distance = torch.all(torch.vstack((distances - 1 < distance, distances > distance)), dim=0)
-            # skip if no samples within distance
-            if torch.sum(samples_within_distance) == 0:
-                continue
-            # mean of position offset
-            meta[f"{mode}{suffix} Final Position Offset {distance-1} - {distance}m [Batch]"] = torch.mean(
-                position_delta[samples_within_distance]
-            ).item()
-            # mean of position offset when in collision
-            if torch.sum(collision_idx[samples_within_distance]) > 0:
-                meta[f"{mode}{suffix} Final Position Offset {distance-1} - {distance}m [Collision]"] = torch.mean(
-                    position_delta[collision_idx & samples_within_distance]
+
+        if mode == "plot":
+            pred_collision_bool = pred_collision_prob_traj > self.cfg.collision_threshold
+            pred_collision_idx = torch.any(pred_collision_bool, dim=1)
+            pred_state_traj_coll_comp = pred_state_traj.clone()
+            if torch.any(pred_collision_idx):
+                collision_env, pred_collision_idx_step = torch.where(pred_collision_bool)
+                collision_env_red = torch.unique(collision_env)
+                pred_collision_idx_step_red = torch.hstack(
+                    [torch.min(pred_collision_idx_step[collision_env == curr_env]) for curr_env in collision_env_red]
+                )
+                # get indices
+                indices = [
+                    [
+                        collision_env_red[idx].repeat(self.cfg.prediction_horizon - pred_collision_idx_step_red[idx]),
+                        torch.arange(
+                            pred_collision_idx_step_red[idx].item(), self.cfg.prediction_horizon, device=self.device
+                        ),
+                        pred_collision_idx_step_red[idx].repeat(
+                            self.cfg.prediction_horizon - pred_collision_idx_step_red[idx].item()
+                        ),
+                    ]
+                    for idx in range(len(collision_env_red))
+                ]
+                env_idx = torch.hstack([curr_indices[0] for curr_indices in indices])
+                horizon_idx = torch.hstack([curr_indices[1] for curr_indices in indices])
+                command_idx = torch.hstack([curr_indices[2] for curr_indices in indices])
+                # update data
+                pred_state_traj_coll_comp[env_idx, horizon_idx] = pred_state_traj[env_idx, command_idx]
+            # get the error in the position
+            position_delta_coll_comp = torch.norm(
+                pred_state_traj_coll_comp[:, -1, :2] - target_state_traj[:, -1, :2], dim=-1
+            )
+
+        if mode != "test":
+            for distance in torch.arange(
+                self.cfg.eval_distance_interval,
+                int(torch.max(distances).item()) + self.cfg.eval_distance_interval,
+                self.cfg.eval_distance_interval,
+            ):
+                samples_within_distance = torch.all(
+                    torch.vstack((distances - self.cfg.eval_distance_interval < distance, distances > distance)), dim=0
+                )
+                # skip if no samples within distance
+                if torch.sum(samples_within_distance) == 0:
+                    continue
+                # mean of position offset
+                meta[
+                    f"{mode}{suffix} Final Position Offset {distance - self.cfg.eval_distance_interval:.2f} -"
+                    f" {distance:.2f}m [Batch]"
+                ] = torch.mean(position_delta[samples_within_distance]).item()
+                # mean of position offset when in collision
+                if torch.sum(collision_idx[samples_within_distance]) > 0:
+                    meta[
+                        f"{mode}{suffix} Final Position Offset {distance - self.cfg.eval_distance_interval:.2f} -"
+                        f" {distance:.2f}m [Collision]"
+                    ] = torch.mean(position_delta[collision_idx & samples_within_distance]).item()
+                    if mode == "plot" and torch.sum(collision_idx[samples_within_distance]) > 1:  # only record for eval
+                        meta[
+                            f"{mode}{suffix} Final Position Offset Std"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Collision]"
+                        ] = torch.std(position_delta[collision_idx & samples_within_distance]).item()
+                if torch.sum(~collision_idx[samples_within_distance]) > 0:
+                    meta[
+                        f"{mode}{suffix} Final Position Offset {distance - self.cfg.eval_distance_interval:.2f} -"
+                        f" {distance:.2f}m [Non-Collision]"
+                    ] = torch.mean(position_delta[~collision_idx & samples_within_distance]).item()
+                    if (
+                        mode == "plot" and torch.sum(~collision_idx[samples_within_distance]) > 1
+                    ):  # only record for eval
+                        meta[
+                            f"{mode}{suffix} Final Position Offset Std"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Non-Collision]"
+                        ] = torch.std(position_delta[~collision_idx & samples_within_distance]).item()
+                # std of position offset
+                if torch.sum(samples_within_distance) > 1:
+                    meta[
+                        f"{mode}{suffix} Final Position Offset Std {distance - self.cfg.eval_distance_interval:.2f} -"
+                        f" {distance:.2f}m [Batch]"
+                    ] = torch.std(position_delta[samples_within_distance]).item()
+                # relative position offset
+                meta[
+                    f"{mode}{suffix} Final Relative Position Offset {distance - self.cfg.eval_distance_interval:.2f} -"
+                    f" {distance:.2f}m [Batch]"
+                ] = torch.mean(rel_position_delta[samples_within_distance]).item()
+                if mode == "plot":
+                    if torch.sum(samples_within_distance) > 1:
+                        meta[
+                            f"{mode}{suffix} Final Relative Position Offset Std"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Batch]"
+                        ] = torch.std(rel_position_delta[samples_within_distance]).item()
+
+                    # eval taken the collision predicition into account
+                    if torch.sum(pred_collision_idx[samples_within_distance]) > 0:
+                        meta[
+                            f"{mode}{suffix} Final Position Offset {distance - self.cfg.eval_distance_interval:.2f} -"
+                            f" {distance:.2f}m [Pred Collision]"
+                        ] = torch.mean(position_delta_coll_comp[pred_collision_idx & samples_within_distance]).item()
+                    if torch.sum(pred_collision_idx[samples_within_distance]) > 1:
+                        meta[
+                            f"{mode}{suffix} Final Position Offset Std"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Pred Collision]"
+                        ] = torch.std(position_delta_coll_comp[pred_collision_idx & samples_within_distance]).item()
+
+                    if torch.sum(~pred_collision_idx[samples_within_distance]) > 0:
+                        meta[
+                            f"{mode}{suffix} Final Position Offset {distance - self.cfg.eval_distance_interval:.2f} -"
+                            f" {distance:.2f}m [Pred Non-Collision]"
+                        ] = torch.mean(position_delta_coll_comp[~pred_collision_idx & samples_within_distance]).item()
+                    if torch.sum(~pred_collision_idx[samples_within_distance]) > 1:
+                        meta[
+                            f"{mode}{suffix} Final Position Offset Std"
+                            f" {distance - self.cfg.eval_distance_interval:.2f} - {distance:.2f}m [Pred Non-Collision]"
+                        ] = torch.std(position_delta_coll_comp[~pred_collision_idx & samples_within_distance]).item()
+
+        # position offset w.r.t. the individual prediction steps of the model
+        if mode == "plot":
+            position_delta_step = torch.norm(pred_state_traj[:, :, :2] - target_state_traj[:, :, :2], dim=-1)
+            rel_position_delta_step = position_delta_step / torch.norm(target_state_traj[:, :, :2], dim=-1)
+            position_delta_step_coll_comp = torch.norm(
+                pred_state_traj_coll_comp[:, :, :2] - target_state_traj[:, :, :2], dim=-1
+            )
+
+            for idx in range(self.cfg.prediction_horizon):
+                meta[f"{mode}{suffix} Position Offset {idx} [Batch]"] = torch.mean(position_delta_step[:, idx]).item()
+                meta[f"{mode}{suffix} Position Offset Std {idx} [Batch]"] = torch.std(
+                    position_delta_step[:, idx]
                 ).item()
-            if torch.sum(~collision_idx[samples_within_distance]) > 0:
-                meta[f"{mode}{suffix} Final Position Offset {distance-1} - {distance}m [Non-Collision]"] = torch.mean(
-                    position_delta[~collision_idx & samples_within_distance]
+                meta[f"{mode}{suffix} Relative Position Offset {idx} [Batch]"] = torch.mean(
+                    rel_position_delta_step[:, idx]
                 ).item()
-            # don't record for test set (overflow of information)
-            if mode == "test":
-                continue
-            # std of position offset
-            if torch.sum(samples_within_distance) > 1:
-                meta[f"{mode}{suffix} Final Position Offset Std {distance-1} - {distance}m [Batch]"] = torch.std(
-                    position_delta[samples_within_distance]
+                meta[f"{mode}{suffix} Relative Position Offset Std {idx} [Batch]"] = torch.std(
+                    rel_position_delta_step[:, idx]
                 ).item()
-            # relative position offset
-            meta[f"{mode}{suffix} Final Relative Position Offset {distance-1} - {distance}m [Batch]"] = torch.mean(
-                rel_position_delta[samples_within_distance]
-            ).item()
+
+                if torch.sum(collision_idx) > 0:
+                    meta[f"{mode}{suffix} Position Offset {idx} [Collision]"] = torch.mean(
+                        position_delta_step[collision_idx, idx]
+                    ).item()
+                if torch.sum(collision_idx) > 1:
+                    meta[f"{mode}{suffix} Position Offset Std {idx} [Collision]"] = torch.std(
+                        position_delta_step[collision_idx, idx]
+                    ).item()
+                if torch.sum(~collision_idx) > 0:
+                    meta[f"{mode}{suffix} Position Offset {idx} [Non-Collision]"] = torch.mean(
+                        position_delta_step[~collision_idx, idx]
+                    ).item()
+                if torch.sum(~collision_idx) > 1:
+                    meta[f"{mode}{suffix} Position Offset Std {idx} [Non-Collision]"] = torch.std(
+                        position_delta_step[~collision_idx, idx]
+                    ).item()
+
+                if torch.sum(pred_collision_idx) > 0:
+                    meta[f"{mode}{suffix} Position Offset {idx} [Pred Collision]"] = torch.mean(
+                        position_delta_step_coll_comp[pred_collision_idx, idx]
+                    ).item()
+                if torch.sum(pred_collision_idx) > 1:
+                    meta[f"{mode}{suffix} Position Offset Std {idx} [Pred Collision]"] = torch.std(
+                        position_delta_step_coll_comp[pred_collision_idx, idx]
+                    ).item()
+                if torch.sum(~pred_collision_idx) > 0:
+                    meta[f"{mode}{suffix} Position Offset {idx} [Pred Non-Collision]"] = torch.mean(
+                        position_delta_step_coll_comp[~pred_collision_idx, idx]
+                    ).item()
+                if torch.sum(~pred_collision_idx) > 1:
+                    meta[f"{mode}{suffix} Position Offset Std {idx} [Pred Non-Collision]"] = torch.std(
+                        position_delta_step_coll_comp[~pred_collision_idx, idx]
+                    ).item()
 
         # absolute position offset
         meta[f"{mode}{suffix} Final Position Offset [Batch]"] = torch.mean(position_delta).item()
@@ -447,21 +879,30 @@ class FDMModel(Model):
             meta[f"{mode}{suffix} Final Position Offset Max [Batch]"] = torch.max(position_delta).item()
             meta[f"{mode}{suffix} Final Position Offset Min [Batch]"] = torch.min(position_delta).item()
 
-        # relative position offset
-        meta[f"{mode}{suffix} Final Relative Position Offset [Batch]"] = torch.mean(rel_position_delta).item()
-        meta[f"{mode}{suffix} Final Relative Position Offset [Batch] [Collision]"] = torch.mean(
-            rel_position_delta[collision_idx]
-        ).item()
-        meta[f"{mode}{suffix} Final Relative Position Offset [Batch] [Non-Collision]"] = torch.mean(
-            rel_position_delta[~collision_idx]
-        ).item()
-        if mode != "test":
+            # relative position offset
+            meta[f"{mode}{suffix} Final Relative Position Offset [Batch]"] = torch.mean(rel_position_delta).item()
+            meta[f"{mode}{suffix} Final Relative Position Offset [Batch] [Collision]"] = torch.mean(
+                rel_position_delta[collision_idx]
+            ).item()
+            meta[f"{mode}{suffix} Final Relative Position Offset [Batch] [Non-Collision]"] = torch.mean(
+                rel_position_delta[~collision_idx]
+            ).item()
             meta[f"{mode}{suffix} Final Relative Position Offset Std [Batch]"] = torch.std(rel_position_delta).item()
             meta[f"{mode}{suffix} Final Relative Position Offset Max [Batch]"] = torch.max(rel_position_delta).item()
             meta[f"{mode}{suffix} Final Relative Position Offset Min [Batch]"] = torch.min(rel_position_delta).item()
 
+        return meta
+
+    def _eval_collision_pred(
+        self,
+        meta: dict,
+        mode: str,
+        pred_collision_prob_traj: torch.Tensor,
+        target_collision_state_traj: torch.Tensor,
+        suffix: str = "",
+    ) -> dict:
         # change target depending on unified_predicition_value
-        if self.cfg.unified_failure_prediction:
+        if self.param_unified_failure_prediction:
             target_collision_state_traj = torch.max(target_collision_state_traj, dim=-1)[0]
         # Precision of collision prediction
         meta[f"{mode}{suffix} Collision Prediction Precision [Batch]"] = self.metric_presision(
@@ -486,11 +927,15 @@ class FDMModelVelocityMultiStep(FDMModel):
     def __init__(self, cfg: FDMBaseModelCfg, device: str):
         super().__init__(cfg, device)
 
+        self.param_zero_collision_actions = cfg.zero_collision_actions
+
     """
     Forward function of the dynamics model
     """
 
-    def forward(self, model_in: tuple[torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(
+        self, model_in: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Forward pass of the model
 
@@ -525,18 +970,7 @@ class FDMModelVelocityMultiStep(FDMModel):
         ###
 
         # encode state and proprioceptive observations
-        if isinstance(self.cfg.state_obs_proprioception_encoder, BaseModelCfg.MLPConfig):
-            # MLP - only work with history equal to 1
-            encoded_state_obs_proprioceptive = self.state_obs_proprioceptive_encoder(
-                torch.concatenate([state, obs_proprioceptive], dim=2)
-            )
-        else:
-            # recurrent - work with history > 1
-            # TODO: for GRU the same, for S4RNN check if the same as the hidden
-            encoded_state_obs_proprioceptive, _ = self.state_obs_proprioceptive_encoder(
-                torch.concatenate([state, obs_proprioceptive], dim=2)
-            )
-            encoded_state_obs_proprioceptive = encoded_state_obs_proprioceptive[:, -1, :]
+        encoded_state_obs_proprioceptive = self.state_encoder_forward(state, obs_proprioceptive)
 
         # encode exteroceptive observations
         encoded_obs_exteroceptive = self.obs_exteroceptive_encoder(obs_extereoceptive)
@@ -568,30 +1002,32 @@ class FDMModelVelocityMultiStep(FDMModel):
         encoded_state_obs = torch.concatenate([encoded_state_obs, friction], dim=1)
 
         # forward predict the state and observations
-        if isinstance(self.cfg.recurrence, BaseModelCfg.MLPConfig):
-            forward_predict_state_obs = self.recurrence(
-                torch.concatenate([encoded_actions.flatten(start_dim=1), encoded_state_obs], dim=1)
-            )
-        else:
-            # adjust the dimensions for the encoded_state_obs
-            encoded_state_obs = encoded_state_obs.unsqueeze(1).repeat(1, traj_len, 1)
+        forward_predict_state_obs = self.recurrence_forward(encoded_actions, encoded_state_obs)
 
-            # recurrent forward predict encoding of state and obsverations given the commands
-            forward_predict_state_obs, _ = self.recurrence(
-                torch.concatenate([encoded_actions, encoded_state_obs], dim=-1)
-            )
-            forward_predict_state_obs = forward_predict_state_obs.reshape(batch_size, -1)
+        # predict the probability of collision along the trajectory
+        collision_prob_traj = self.sigmoid(self.collision_predictor.forward(forward_predict_state_obs))
+        collision_prob_traj = collision_prob_traj.view(batch_size, traj_len)
 
         # predict the state transitions between consecutive commands in robot frame
         corr_vel = self.state_predictor.forward(forward_predict_state_obs)
         corr_vel = corr_vel.view(batch_size, traj_len, -1)
 
+        # override correction with actions if in collision
+        if self.param_zero_collision_actions:
+            corr_vel[collision_prob_traj > self.param_collision_threshold] = -actions[
+                collision_prob_traj > self.param_collision_threshold
+            ]
+
         # residual connection to velocity command
         corr_vel = corr_vel + actions
 
+        # FIXME: ONLY FOR INFERENCE - MAYBE ????
+        # cancel out actions with large corrections
+        # corr_vel[corr_vel / actions < 0.3] = 0.0
+
         # get the resulting change in position and angle when applying the commands perfectly
         # velocity command units x: [m/s], y: [m/s], phi: [rad/s]
-        corr_distance = corr_vel * self.cfg.command_timestep
+        corr_distance = corr_vel * self.param_command_timestep
 
         # Cumsum is an inplace operation therefore the clone is necesasry
         cummulative_yaw = corr_distance.clone()[..., -1].cumsum(-1)
@@ -613,10 +1049,8 @@ class FDMModelVelocityMultiStep(FDMModel):
             dim=-1,
         )
 
-        # predict the probability of collision along the trajectory
-        collision_prob_traj = self.sigmoid(self.collision_predictor.forward(forward_predict_state_obs))
-        collision_prob_traj = collision_prob_traj.view(batch_size, traj_len)
-        if self.cfg.unified_failure_prediction:
+        # unify the collision probability if enabled
+        if self.param_unified_failure_prediction:
             collision_prob_traj = torch.max(collision_prob_traj, dim=-1)[0]
 
         # energy prediction
@@ -625,8 +1059,23 @@ class FDMModelVelocityMultiStep(FDMModel):
 
         return state_traj, collision_prob_traj, energy_traj
 
+    @torch.jit.export
+    def state_encoder_forward_rnn(self, state: torch.Tensor, obs_proprioceptive: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the state encoder for the RNN"""
+        return self.state_obs_proprioceptive_encoder(torch.concatenate([state, obs_proprioceptive], dim=2))[0][:, -1, :]
 
-class FDMModelVelocitySingleStep(FDMModel):
+    @torch.jit.export
+    def recurrence_forward_rnn(self, actions: torch.Tensor, encoded_state_obs: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the recurrence for the RNN"""
+        # adjust the dimensions for the encoded_state_obs
+        encoded_state_obs = encoded_state_obs.unsqueeze(1).repeat(1, actions.shape[1], 1)
+
+        # recurrent forward predict encoding of state and obsverations given the commands
+        forward_predict_state_obs, _ = self.recurrence(torch.concatenate([actions, encoded_state_obs], dim=-1))
+        return forward_predict_state_obs.reshape(actions.shape[0], -1)
+
+
+class FDMModelVelocitySingleStep(FDMModelVelocityMultiStep):
     cfg: FDMBaseModelCfg
     """Model config class"""
 
@@ -637,7 +1086,9 @@ class FDMModelVelocitySingleStep(FDMModel):
     Forward function of the dynamics model
     """
 
-    def forward(self, model_in: tuple[torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(
+        self, model_in: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Forward pass of the model
 
@@ -672,18 +1123,7 @@ class FDMModelVelocitySingleStep(FDMModel):
         ###
 
         # encode state and proprioceptive observations
-        if isinstance(self.cfg.state_obs_proprioception_encoder, BaseModelCfg.MLPConfig):
-            # MLP - only work with history equal to 1
-            encoded_state_obs_proprioceptive = self.state_obs_proprioceptive_encoder(
-                torch.concatenate([state, obs_proprioceptive], dim=2)
-            )
-        else:
-            # recurrent - work with history > 1
-            # TODO: for GRU the same, for S4RNN check if the same as the hidden
-            encoded_state_obs_proprioceptive, _ = self.state_obs_proprioceptive_encoder(
-                torch.concatenate([state, obs_proprioceptive], dim=2)
-            )
-            encoded_state_obs_proprioceptive = encoded_state_obs_proprioceptive[:, -1, :]
+        encoded_state_obs_proprioceptive = self.state_encoder_forward(state, obs_proprioceptive)
 
         # encode exteroceptive observations
         encoded_obs_exteroceptive = self.obs_exteroceptive_encoder(obs_extereoceptive)
@@ -717,9 +1157,7 @@ class FDMModelVelocitySingleStep(FDMModel):
         # adjust the dimensions for the encoded_state_obs
         encoded_state_obs = encoded_state_obs.unsqueeze(1)
         # initialize the hidden
-        hidden = torch.zeros(
-            self.cfg.recurrence.num_layers, batch_size, self.cfg.recurrence.hidden_size, device=self.device
-        )
+        hidden = torch.zeros(self.recurrence.num_layers, batch_size, self.recurrence.hidden_size, device=self.device)
         # init buffers for corr_vel, collision and engergy predictions
         corr_vel = torch.zeros(batch_size, traj_len, 3, device=self.device)
         collision_prob_traj = torch.zeros(batch_size, traj_len, device=self.device)
@@ -764,7 +1202,7 @@ class FDMModelVelocitySingleStep(FDMModel):
 
         # get the resulting change in position and angle when applying the commands perfectly
         # velocity command units x: [m/s], y: [m/s], phi: [rad/s]
-        corr_distance = corr_vel * self.cfg.command_timestep
+        corr_distance = corr_vel * self.param_command_timestep
 
         # Cumsum is an inplace operation therefore the clone is necesasry
         cummulative_yaw = corr_distance.clone()[..., -1].cumsum(-1)
@@ -787,7 +1225,7 @@ class FDMModelVelocitySingleStep(FDMModel):
         )
 
         # predict the probability of collision along the trajectory if unified prediction
-        if self.cfg.unified_failure_prediction:
+        if self.param_unified_failure_prediction:
             collision_prob_traj = torch.max(collision_prob_traj, dim=-1)[0]
 
         return state_traj, collision_prob_traj, energy_traj
@@ -821,7 +1259,9 @@ class FDMModelVelocitySingleStepHeightAdjust(FDMModel):
     Forward function of the dynamics model
     """
 
-    def forward(self, model_in: tuple[torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(
+        self, model_in: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Forward pass of the model
 
@@ -855,14 +1295,13 @@ class FDMModelVelocitySingleStepHeightAdjust(FDMModel):
         ###
 
         # encode state and proprioceptive observations
-        if isinstance(self.cfg.state_obs_proprioception_encoder, BaseModelCfg.MLPConfig):
+        if not self.param_state_encoder_recursive:
             # MLP - only work with history equal to 1
             encoded_state_obs_proprioceptive = self.state_obs_proprioceptive_encoder(
                 torch.concatenate([state, obs_proprioceptive], dim=2)
             )
         else:
             # recurrent - work with history > 1
-            # TODO: for GRU the same, for S4RNN check if the same as the hidden
             encoded_state_obs_proprioceptive, _ = self.state_obs_proprioceptive_encoder(
                 torch.concatenate([state, obs_proprioceptive], dim=2)
             )
@@ -895,9 +1334,7 @@ class FDMModelVelocitySingleStepHeightAdjust(FDMModel):
         # adjust the dimensions for the encoded_state_obs
         encoded_state_obs = encoded_state_obs.unsqueeze(1)
         # initialize the hidden
-        hidden = torch.zeros(
-            self.cfg.recurrence.num_layers, batch_size, self.cfg.recurrence.hidden_size, device=self.device
-        )
+        hidden = torch.zeros(self.recurrence.num_layers, batch_size, self.recurrence.hidden_size, device=self.device)
         # init buffers for collision and engergy predictions
         collision_prob_traj = torch.zeros(batch_size, traj_len, device=self.device)
         energy_traj = torch.zeros(batch_size, traj_len, device=self.device)
@@ -949,7 +1386,7 @@ class FDMModelVelocitySingleStepHeightAdjust(FDMModel):
             # residual connection to velocity command
             # get the resulting change in position and angle when applying the commands perfectly
             # velocity command units x: [m/s], y: [m/s], phi: [rad/s]
-            corr_distance = (last_corr_vel + actions[:, traj_idx]) * self.cfg.command_timestep
+            corr_distance = (last_corr_vel + actions[:, traj_idx]) * self.param_command_timestep
 
             cummulative_yaw = cummulative_yaw + corr_distance[..., -1]
 
@@ -957,8 +1394,6 @@ class FDMModelVelocitySingleStepHeightAdjust(FDMModel):
             r_vec1 = torch.stack([torch.cos(cummulative_yaw), -torch.sin(cummulative_yaw)], dim=-1)
             r_vec2 = torch.stack([torch.sin(cummulative_yaw), torch.cos(cummulative_yaw)], dim=-1)
             so2 = torch.stack([r_vec1, r_vec2], dim=2)
-
-            # TODO: check if this is correct
 
             actions_local_frame = (so2.contiguous() @ corr_distance[..., :2].contiguous().reshape(-1, 2, 1)).squeeze(-1)
             state_traj[:, traj_idx, :2] = curr_state[:, :2] + actions_local_frame
@@ -968,7 +1403,7 @@ class FDMModelVelocitySingleStepHeightAdjust(FDMModel):
             curr_state = state_traj[:, traj_idx]
 
         # predict the probability of collision along the trajectory if unified prediction
-        if self.cfg.unified_failure_prediction:
+        if self.param_unified_failure_prediction:
             collision_prob_traj = torch.max(collision_prob_traj, dim=-1)[0]
 
         return state_traj, collision_prob_traj, energy_traj

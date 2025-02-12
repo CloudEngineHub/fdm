@@ -1,4 +1,8 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
@@ -45,7 +49,7 @@ def rand_perlin_2d(shape, res, device="cpu", fade=lambda t: 6 * t**5 - 15 * t**4
         .repeat_interleave(d[1], -2)
     )
 
-    dot = lambda grad, shift: (
+    dot = lambda grad, shift: (  # noqa: E731
         torch.stack((grid[..., :height, :width, 0] + shift[0], grid[..., :height, :width, 1] + shift[1]), dim=-1)
         * grad[..., :height, :width, :]
     ).sum(dim=-1)

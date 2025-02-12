@@ -1,15 +1,15 @@
+# Use Python 3.8 for files in ros/, otherwise use Python 3.10
+
 repos:
   - repo: https://github.com/python/black
     rev: 24.3.0
     hooks:
       - id: black
         args: ["--line-length", "120", "--unstable"]
-        # Use Python 3.8 for files in ros/, otherwise use Python 3.10
         language_version: python3.8
         files: ^ros/
       - id: black
         args: ["--line-length", "120", "--unstable"]
-        # language_version: python3.10
         exclude: ^ros/
 
   - repo: https://github.com/pycqa/flake8
@@ -21,7 +21,6 @@ repos:
         files: ^ros/
       - id: flake8
         additional_dependencies: [flake8-simplify, flake8-return]
-        # language_version: python3.10
         exclude: ^ros/
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -51,7 +50,6 @@ repos:
         files: ^ros/
       - id: isort
         args: ["--profile", "black", "--filter-files"]
-        # language_version: python3.10
         exclude: ^ros/
 
   - repo: https://github.com/asottile/pyupgrade
@@ -63,17 +61,16 @@ repos:
         files: ^ros/
       - id: pyupgrade
         args: ["--py310-plus"]
-        # language_version: python3.10
         exclude: ^ros/
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.6
     hooks:
       - id: codespell
+        exclude: ^ros/
         additional_dependencies:
         - tomli
-        # exclude: ^(ros)
-  
+
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.1
     hooks:
@@ -85,7 +82,7 @@ repos:
           - --license-filepath
           - .github/LICENSE_HEADER.txt
           - --use-current-year
-        
+
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.1
     hooks:

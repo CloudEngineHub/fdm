@@ -1,16 +1,21 @@
-
+# Copyright (c) 2025, ETH Zurich (Robotic Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
 import torch
 from collections.abc import Sequence
-
-from omni.isaac.lab.envs import ManagerBasedRLEnv
-
-from fdm.model.fdm_model_cfg import FDMBaseModelCfg
+from typing import TYPE_CHECKING
 
 from .base_agent import Agent
-from .time_correlated_actions_cfg import TimeCorrelatedCommandTrajectoryAgentCfg
+
+if TYPE_CHECKING:
+    from fdm.runner import FDMRunner
+
+    from .time_correlated_actions_cfg import TimeCorrelatedCommandTrajectoryAgentCfg
 
 
 class TimeCorrelatedCommandTrajectoryAgent(Agent):
@@ -27,14 +32,14 @@ class TimeCorrelatedCommandTrajectoryAgent(Agent):
     cfg: TimeCorrelatedCommandTrajectoryAgentCfg
     """The configuration of the command generator."""
 
-    def __init__(self, cfg: TimeCorrelatedCommandTrajectoryAgentCfg, model_cfg: FDMBaseModelCfg, env: ManagerBasedRLEnv):
+    def __init__(self, cfg: TimeCorrelatedCommandTrajectoryAgentCfg, runner: FDMRunner):
         """Initialize the command generator.
 
         Args:
             cfg: The configuration of the command generator.
             env: The environment.
         """
-        super().__init__(cfg, model_cfg=model_cfg, env=env)
+        super().__init__(cfg, runner=runner)
         # limits
         self._limits_min = torch.Tensor(
             (self.cfg.ranges.lin_vel_x[0], self.cfg.ranges.lin_vel_y[0], self.cfg.ranges.ang_vel_z[0])
@@ -51,28 +56,24 @@ class TimeCorrelatedCommandTrajectoryAgent(Agent):
             ],
             device=self.device,
         )
-        self.max_sigma_scale = self.cfg.sigma_scale
         # -- environment split
         assert (
             self.cfg.linear_ratio + self.cfg.normal_ratio + self.cfg.constant_ratio + self.cfg.regular_increasing_ratio
             == 1.0
         )
-        self._uniform_envs_range = (0, int(self.env.num_envs * self.cfg.linear_ratio))
+        self._uniform_envs_range = (0, int(self._runner.env.num_envs * self.cfg.linear_ratio))
         self._normal_envs_range = (
-            int(self.env.num_envs * self.cfg.linear_ratio),
-            int(self.env.num_envs * (self.cfg.linear_ratio + self.cfg.normal_ratio)),
+            int(self._runner.env.num_envs * self.cfg.linear_ratio),
+            int(self._runner.env.num_envs * (self.cfg.linear_ratio + self.cfg.normal_ratio)),
         )
         self._constant_envs_range = (
-            int(self.env.num_envs * (self.cfg.linear_ratio + self.cfg.normal_ratio)),
-            int(self.env.num_envs * (self.cfg.linear_ratio + self.cfg.normal_ratio + self.cfg.constant_ratio)),
+            int(self._runner.env.num_envs * (self.cfg.linear_ratio + self.cfg.normal_ratio)),
+            int(self._runner.env.num_envs * (self.cfg.linear_ratio + self.cfg.normal_ratio + self.cfg.constant_ratio)),
         )
         self._regular_vel_envs_range = (
-            int(self.env.num_envs * (self.cfg.linear_ratio + self.cfg.normal_ratio + self.cfg.constant_ratio)),
-            self.env.num_envs,
+            int(self._runner.env.num_envs * (self.cfg.linear_ratio + self.cfg.normal_ratio + self.cfg.constant_ratio)),
+            self._runner.env.num_envs,
         )
-
-        # reset
-        self.reset()
 
     def __str__(self) -> str:
         """Return a string representation of the command generator."""
@@ -116,6 +117,9 @@ class TimeCorrelatedCommandTrajectoryAgent(Agent):
         constant_ids = env_ids[(env_ids >= self._constant_envs_range[0]) & (env_ids <= self._constant_envs_range[1])]
         self._plan[constant_ids] = self._plan[constant_ids, 0].unsqueeze(1).repeat(1, self.cfg.horizon, 1)
 
+    def plan_reset(self, obs: dict, env_ids: torch.Tensor):
+        self._plan[env_ids] = torch.roll(self._plan[env_ids], shifts=-1, dims=1)
+
     """
     Command resamplers
     """
@@ -158,9 +162,9 @@ class TimeCorrelatedCommandTrajectoryAgent(Agent):
         # sample correlation factor
         r = torch.empty(len(env_ids), device=self.device)
         sigma = torch.vstack((
-            r.uniform_(0, self.max_sigma_scale),
-            r.uniform_(0, self.max_sigma_scale),
-            r.uniform_(0, self.max_sigma_scale),
+            r.uniform_(0, self.cfg.sigma_scale),
+            r.uniform_(0, self.cfg.sigma_scale),
+            r.uniform_(0, self.cfg.sigma_scale),
         )).T
         sigma = sigma * self.max_sigma
         for horizon_idx in range(self.cfg.horizon - 1):
