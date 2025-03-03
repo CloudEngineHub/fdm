@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import torch
 
-from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 import fdm.env_cfg.robot_cfg as env_robot_cfg
 import fdm.mdp as mdp

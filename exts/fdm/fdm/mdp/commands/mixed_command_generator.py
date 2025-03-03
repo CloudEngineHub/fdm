@@ -4,11 +4,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Copyright (c) 2024 ETH Zurich (Robotic Systems Lab)
-# Author: Pascal Roth
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
 
 """Sub-module containing command generators for the position-based locomotion task."""
 
@@ -18,11 +13,11 @@ import torch
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from omni.isaac.lab.envs.mdp import NullCommand
-from omni.isaac.lab.managers import CommandTerm
+from isaaclab.envs.mdp import NullCommand
+from isaaclab.managers import CommandTerm
 
 if TYPE_CHECKING:
-    from omni.isaac.lab.envs import ManagerBasedRLEnv
+    from isaaclab.envs import ManagerBasedRLEnv
 
     from .mixed_command_generator_cfg import MixedCommandCfg
 

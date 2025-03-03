@@ -12,9 +12,8 @@ import torch
 import torch.nn as nn
 from typing import TYPE_CHECKING
 
+from isaaclab.utils import math as math_utils
 from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall
-
-from omni.isaac.lab.utils import math as math_utils
 
 from .model_base import Model
 from .utils import EmpiricalNormalization, L2Loss

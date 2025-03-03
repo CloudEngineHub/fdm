@@ -8,20 +8,20 @@ from __future__ import annotations
 
 import os
 
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.assets import AssetBaseCfg
-from omni.isaac.lab.envs import ManagerBasedRLEnvCfg
-from omni.isaac.lab.managers import EventTermCfg as EventTerm
-from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
-from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
-from omni.isaac.lab.scene import InteractiveSceneCfg
-from omni.isaac.lab.sensors import ContactSensorCfg, RayCasterCfg, patterns
-from omni.isaac.lab.terrains import TerrainImporterCfg
-from omni.isaac.lab.utils import configclass
-from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as Unoise
-from omni.isaac.lab_assets import ISAACLAB_ASSETS_DATA_DIR
+import isaaclab.sim as sim_utils
+from isaaclab.assets import AssetBaseCfg
+from isaaclab.envs import ManagerBasedRLEnvCfg
+from isaaclab.managers import EventTermCfg as EventTerm
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.managers import TerminationTermCfg as DoneTerm
+from isaaclab.scene import InteractiveSceneCfg
+from isaaclab.sensors import ContactSensorCfg, MultiMeshRayCasterCfg, patterns
+from isaaclab.terrains import TerrainImporterCfg
+from isaaclab.utils import configclass
+from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+from isaaclab_assets import ISAACLAB_ASSETS_DATA_DIR
 
 import fdm.mdp as mdp
 from fdm import FDM_DATA_DIR
@@ -30,7 +30,7 @@ from fdm import FDM_DATA_DIR
 # Pre-defined configs
 ##
 # isort: off
-from omni.isaac.lab_assets.anymal import ANYMAL_D_CFG
+from isaaclab_assets.robots.anymal import ANYMAL_D_CFG
 
 # NOTE: Uncomment the following imports to enable terrain generation
 # from .terrain_cfg import FDM_TERRAINS_CFG
@@ -70,11 +70,11 @@ class TerrainSceneCfg(InteractiveSceneCfg):
     #     prim_path="/World/ground",
     #     terrain_type="generator",
     #     # PILLAR TERRAIN
-    #     # terrain_generator=FDM_TERRAINS_CFG,
+    #     terrain_generator=FDM_TERRAINS_CFG,
     #     # STAIRS / Stepping Stones / Pillars Terrain
     #     # terrain_generator=FDM_EXTEROCEPTIVE_TERRAINS_CFG,
     #     # PLANNER Stairs/Ramp Terrain
-    #     terrain_generator=PLANNER_TRAIN_CFG,
+    #     # terrain_generator=PLANNER_TRAIN_CFG,
     #     # Maze Terrain
     #     # terrain_generator=MAZE_TERRAIN_CFG,
     #     max_init_terrain_level=None,
@@ -123,11 +123,11 @@ class TerrainSceneCfg(InteractiveSceneCfg):
     # robots
     robot = ANYMAL_D_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
     # sensors
-    height_scanner = RayCasterCfg(
+    height_scanner = MultiMeshRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
-        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5 m above the base for door assessment
+        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5 m above the base for door assessment
         attach_yaw_only=True,
-        pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
+        pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=(1.6, 1.0)),
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
     )
@@ -339,6 +339,7 @@ class FDMCfg(ManagerBasedRLEnvCfg):
 
     # Scene settings
     scene: TerrainSceneCfg = TerrainSceneCfg(num_envs=4096, env_spacing=2.5, replicate_physics=False)
+    rerender_on_reset = True
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
@@ -346,6 +347,8 @@ class FDMCfg(ManagerBasedRLEnvCfg):
     # MDP settings
     terminations: TerminationsCfg = TerminationsCfg()
     events: EventsCfg = EventsCfg()
+    # set rewards to None
+    rewards = None
 
     def __post_init__(self):
         """Post initialization."""

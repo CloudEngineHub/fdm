@@ -4,11 +4,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Copyright (c) 2024 ETH Zurich (Robotic Systems Lab)
-# Author: Pascal Roth
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
 
 """Sub-module containing command generators for the position-based locomotion task."""
 

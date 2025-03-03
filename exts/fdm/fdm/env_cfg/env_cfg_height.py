@@ -6,11 +6,11 @@
 
 from __future__ import annotations
 
-from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
-from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.sensors import RayCasterCfg, patterns
-from omni.isaac.lab.utils import configclass
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.sensors import MultiMeshRayCasterCfg, patterns
+from isaaclab.utils import configclass
 
 import fdm.mdp as mdp
 
@@ -25,9 +25,11 @@ from .env_cfg_base_mixed import MixedFDMCfg
 
 def modify_scene_cfg(scene_cfg: TerrainSceneCfg):
     # larger height scan
-    scene_cfg.env_sensor = RayCasterCfg(
+    scene_cfg.env_sensor = MultiMeshRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
-        offset=RayCasterCfg.OffsetCfg(pos=(1.75, 0.0, 4.0) if not LARGE_UNIFIED_HEIGHT_SCAN else (0.0, 0.0, 4.0)),
+        offset=MultiMeshRayCasterCfg.OffsetCfg(
+            pos=(1.75, 0.0, 4.0) if not LARGE_UNIFIED_HEIGHT_SCAN else (0.0, 0.0, 4.0)
+        ),
         attach_yaw_only=True,
         pattern_cfg=patterns.GridPatternCfg(
             resolution=0.1, size=(4.5, 5.9) if not LARGE_UNIFIED_HEIGHT_SCAN else (7.9, 5.9)

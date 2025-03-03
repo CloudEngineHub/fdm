@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import argparse
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 
 # local imports
 import utils.cli_args as cli_args  # isort: skip
@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
 parser.add_argument(
     "--mode",
     type=str,
-    default="train",
+    default="debug",
     choices=["train", "eval", "debug", "train-real-world"],
     help="Mode of the script.",
 )
@@ -55,7 +55,7 @@ args_cli.headless = True
 
 if args_cli.mode == "debug":
     args_cli.headless = False
-    args_cli.num_envs = 2048
+    args_cli.num_envs = 2
     args_cli.terrain_analysis_points = 5000
 elif args_cli.mode == "eval":
     args_cli.headless = True
@@ -64,8 +64,8 @@ elif args_cli.mode == "eval":
 
 # args_cli.resume = "Jan29_17-25-19_local_test"
 # args_cli.resume = "Jan29_14-40-33"
-args_cli.env = "baseline"
-args_cli.num_envs = 4096
+# args_cli.env = "baseline"
+# args_cli.num_envs = 4096
 
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
@@ -75,7 +75,6 @@ simulation_app = app_launcher.app
 
 import os
 import torch
-from dataclasses import MISSING
 
 import omni
 
@@ -202,7 +201,7 @@ def main():
         cfg.trainer_cfg.num_samples = 1000
         cfg.trainer_cfg.logging = False
         cfg.trainer_cfg.test_datasets = None
-        if not isinstance(cfg.env_cfg.curriculum, type(MISSING)):
+        if cfg.env_cfg.curriculum is not None:
             cfg.env_cfg.curriculum.command_ratios.func.cfg.update_interval = 200
     elif args_cli.mode == "train-real-world":
         # check that reduced obs are selected when real-world datasets are given for training

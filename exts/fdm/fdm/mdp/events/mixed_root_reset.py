@@ -12,10 +12,10 @@ import torch
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from omni.isaac.lab.managers import SceneEntityCfg
+from isaaclab.managers import SceneEntityCfg
 
 if TYPE_CHECKING:
-    from omni.isaac.lab.envs import ManagerBasedRLEnv
+    from isaaclab.envs import ManagerBasedRLEnv
 
     from .mixed_root_reset_cfg import MixedRootResetEventCfg
 

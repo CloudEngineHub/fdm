@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import argparse
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 
 # local imports
 import utils.cli_args as cli_args  # isort: skip
@@ -56,8 +56,8 @@ simulation_app = app_launcher.app
 
 import torch
 
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.terrains import TerrainImporterCfg
+import isaaclab.sim as sim_utils
+from isaaclab.terrains import TerrainImporterCfg
 
 import fdm.mdp as mdp
 from fdm.env_cfg import FDMCfg

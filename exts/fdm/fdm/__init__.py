@@ -4,12 +4,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Copyright (c) 2024 ETH Zurich (Robotic Systems Lab)
-# Author: Pascal Roth
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
 """Package for navigation tasks."""
 
 import os
@@ -39,7 +33,7 @@ TOTAL_TIME_PREDICTION_HORIZON = 6.0  # seconds
 LARGE_UNIFIED_HEIGHT_SCAN = False
 """Whether to use a large unified height scan for all robot models."""
 
-PLANNER_MODE = True
+PLANNER_MODE = False
 PLANNER_MODE_BASELINE = False
 """Whether to use the planner mode for the sampling-based planner."""
 

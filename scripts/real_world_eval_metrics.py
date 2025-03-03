@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import argparse
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 
 # local imports
 import utils.cli_args as cli_args  # isort: skip
@@ -77,7 +77,7 @@ import re
 import torch
 from torch.utils.data import DataLoader
 
-from omni.isaac.lab_tasks.utils import get_checkpoint_path
+from isaaclab_tasks.utils import get_checkpoint_path
 
 from fdm import LARGE_UNIFIED_HEIGHT_SCAN
 from fdm.utils.args_cli_utils import cfg_modifier_pre_init, robot_changes, runner_cfg_init

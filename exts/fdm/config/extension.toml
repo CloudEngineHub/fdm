@@ -4,22 +4,21 @@
 version = "0.1.0"
 
 # Description
-category = "isaaclab"
-readme  = "README.md"
-
 title = "Forward Dynamics Model"
-author = "Pascal Roth"
-maintainer = "Pascal Roth"
-description="Learned Forward Dynamics Model for Local Planning of Mobile"
+description="Learned Forward Dynamics Model for Local Planning of Mobile Robots"
+authors =["Pascal Roth"]
 repository = "https://github.com/leggedrobotics/forward_dynamics_model.git"
 keywords = ["robotics", "planning", "dynamics_model"]
+category = "robotics"
+readme  = "docs/README.md"
 
 [dependencies]
-"omni.isaac.lab" = {}
-"omni.isaac.lab_assets" = {}
-"omni.isaac.lab_tasks" = {}
+"isaaclab" = {}
+"isaaclab_assets" = {}
+"isaaclab_tasks" = {}
 "nav_collectors" = {}
 "nav_tasks" = {}
 
+# Main python module this extension provides.
 [[python.module]]
-name = "ext_template"
+name = "fdm"

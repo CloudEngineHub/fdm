@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import os
 
-from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
-from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.sensors import RayCasterCfg, patterns
-from omni.isaac.lab.utils import configclass
-from omni.isaac.lab_assets import ISAACLAB_ASSETS_DATA_DIR
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.sensors import MultiMeshRayCasterCfg, patterns
+from isaaclab.utils import configclass
+from isaaclab_assets import ISAACLAB_ASSETS_DATA_DIR
 
 import nav_tasks.sensors as nav_patterns
 from nav_tasks import NAVSUITE_TASKS_DATA_DIR
@@ -26,8 +26,8 @@ from .env_cfg_base import FDMCfg
 ##
 # Pre-defined configs
 ##
-from omni.isaac.lab_assets.tytan import TYTAN_CFG  # isort: skip
-from omni.isaac.lab_assets.aow import ANYMAL_C_ON_WHEELS_CFG  # isort: skip
+from isaaclab_assets.robots.tytan import TYTAN_CFG  # isort: skip
+from isaaclab_assets.robots.aow import ANYMAL_C_ON_WHEELS_CFG  # isort: skip
 
 
 ###
@@ -93,9 +93,9 @@ def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
     """Apply changes to the FDM configuration for the ANYmal Perceptive environment."""
     # change height scanner for the robot
     cfg.scene.height_scanner = None
-    cfg.scene.foot_scanner_lf = RayCasterCfg(
+    cfg.scene.foot_scanner_lf = MultiMeshRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/LF_FOOT",
-        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
+        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
         attach_yaw_only=True,
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
@@ -103,9 +103,9 @@ def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
         max_distance=10.0,
     )
 
-    cfg.scene.foot_scanner_rf = RayCasterCfg(
+    cfg.scene.foot_scanner_rf = MultiMeshRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/RF_FOOT",
-        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
+        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
         attach_yaw_only=True,
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
@@ -113,9 +113,9 @@ def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
         max_distance=10.0,
     )
 
-    cfg.scene.foot_scanner_lh = RayCasterCfg(
+    cfg.scene.foot_scanner_lh = MultiMeshRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/LH_FOOT",
-        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
+        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
         attach_yaw_only=True,
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
@@ -123,9 +123,9 @@ def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
         max_distance=10.0,
     )
 
-    cfg.scene.foot_scanner_rh = RayCasterCfg(
+    cfg.scene.foot_scanner_rh = MultiMeshRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/RH_FOOT",
-        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
+        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
         attach_yaw_only=True,
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
@@ -301,9 +301,9 @@ def aow_env(cfg: FDMCfg, env: str) -> FDMCfg:
     # change robot in the scene
     cfg.scene.robot = ANYMAL_C_ON_WHEELS_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
     # add necessary height scanner
-    cfg.scene.height_scanner = RayCasterCfg(
+    cfg.scene.height_scanner = MultiMeshRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
-        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),
+        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),
         attach_yaw_only=True,
         pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=(1.6, 1.0), ordering="yx"),
         debug_vis=False,

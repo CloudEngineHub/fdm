@@ -6,11 +6,11 @@
 
 from __future__ import annotations
 
-from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
-from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.sensors import RayCasterCfg
-from omni.isaac.lab.utils import configclass
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.sensors import MultiMeshRayCasterCfg
+from isaaclab.utils import configclass
 
 import fdm.mdp as mdp
 import fdm.sensors.patterns_cfg as patterns
@@ -28,13 +28,14 @@ class BaselineTerrainSceneCfg(TerrainSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
 
     # environment sensor
-    env_sensor = RayCasterCfg(
+    env_sensor = MultiMeshRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
-        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),  # TODO: get the correct offset
+        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),  # TODO: get the correct offset
         pattern_cfg=patterns.Lidar2DPatternCfg(horizontal_res=1),
         debug_vis=True,
         mesh_prim_paths=["/World/ground"],
         max_distance=4.0,
+        attach_yaw_only=False,
     )
 
     def __post_init__(self):

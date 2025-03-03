@@ -4,15 +4,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Copyright (c) 2024 ETH Zurich (Robotic Systems Lab)
-# Author: Pascal Roth
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
 
-
-from omni.isaac.lab.terrains import SubTerrainBaseCfg
-from omni.isaac.lab.utils import configclass
+from isaaclab.terrains import SubTerrainBaseCfg
+from isaaclab.utils import configclass
 
 from .rsl_stairs import rsl_stairs_terrain
 

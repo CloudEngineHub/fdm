@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import torch
 
-from omni.isaac.lab.envs import ManagerBasedRLEnv
+from isaaclab.envs import ManagerBasedRLEnv
 
 from fdm.model.fdm_model_cfg import FDMBaseModelCfg
 

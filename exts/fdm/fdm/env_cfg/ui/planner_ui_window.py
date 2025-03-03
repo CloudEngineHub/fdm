@@ -8,10 +8,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from omni.isaac.lab.envs.ui import ManagerBasedRLEnvWindow
+import isaacsim
+from isaaclab.envs.ui import ManagerBasedRLEnvWindow
 
 if TYPE_CHECKING:
-    from omni.isaac.lab.envs import ManagerBasedRLEnv
+    from isaaclab.envs import ManagerBasedRLEnv
 
 
 class PlannerEnvWindow(ManagerBasedRLEnvWindow):
@@ -29,7 +30,7 @@ class PlannerEnvWindow(ManagerBasedRLEnvWindow):
             window_name: The name of the window. Defaults to "Orbit".
         """
         import omni.ui  # noqa: F401
-        from omni.isaac.ui.ui_utils import dropdown_builder
+        from isaacsim.gui.components.ui_utils import dropdown_builder
         from omni.kit.window.extensions import SimpleCheckBox
 
         # initialize base window
@@ -64,13 +65,13 @@ class PlannerEnvWindow(ManagerBasedRLEnvWindow):
                             on_clicked_fn=self.cost_viz_mode_changed,
                             tooltip=f"Select cost visualization mode. (default: {self.cost_viz_modes[default_idx]})",
                         )
-                        omni.isaac.ui.ui_utils.add_line_rect_flourish()
+                        isaacsim.gui.components.ui_utils.add_line_rect_flourish()
                         # add option to display perfect velocity estimate
                     with omni.ui.HStack():
                         text = "Display perfect velocity estimate."
                         omni.ui.Label(
                             "Perfect Velocity Rollout",
-                            width=omni.isaac.ui.ui_utils.LABEL_WIDTH - 12,
+                            width=isaacsim.gui.components.ui_utils.LABEL_WIDTH - 12,
                             alignment=omni.ui.Alignment.LEFT_CENTER,
                             tooltip=text,
                         )
@@ -80,7 +81,7 @@ class PlannerEnvWindow(ManagerBasedRLEnvWindow):
                             on_checked_fn=self.perfect_velocity_changed,
                         )
 
-                        omni.isaac.ui.ui_utils.add_line_rect_flourish()
+                        isaacsim.gui.components.ui_utils.add_line_rect_flourish()
 
     def cost_viz_mode_changed(self, value: str):
         """Callback for cost visualization mode change."""

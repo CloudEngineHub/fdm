@@ -10,11 +10,11 @@ import torch
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from omni.isaac.lab.managers import ManagerTermBase, SceneEntityCfg
-from omni.isaac.lab.sensors import ContactSensor
+from isaaclab.managers import ManagerTermBase, SceneEntityCfg
+from isaaclab.sensors import ContactSensor
 
 if TYPE_CHECKING:
-    from omni.isaac.lab.envs import ManagerBasedRLEnv
+    from isaaclab.envs import ManagerBasedRLEnv
 
     from .max_contact_observation_cfg import MaxContactForceObsCfg
 

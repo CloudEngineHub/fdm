@@ -18,7 +18,7 @@ from .base_agent import Agent
 
 # can only be imported if gui activated
 try:
-    from omni.isaac.debug_draw import _debug_draw as omni_debug_draw
+    from isaacsim.util.debug_draw import _debug_draw as omni_debug_draw
 except ImportError:
     omni_debug_draw = None
 

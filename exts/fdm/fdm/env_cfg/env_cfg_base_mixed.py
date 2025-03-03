@@ -6,13 +6,13 @@
 
 from __future__ import annotations
 
-from omni.isaac.lab.managers import CurriculumTermCfg as CurrTerm
-from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
-from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import CurriculumTermCfg as CurrTerm
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
 
-# from omni.isaac.lab.managers import EventTermCfg as EventTerm
-# from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.utils import configclass
+# from isaaclab.managers import EventTermCfg as EventTerm
+# from isaaclab.managers import SceneEntityCfg
+from isaaclab.utils import configclass
 
 import fdm.mdp as mdp
 

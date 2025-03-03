@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import argparse
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 
 # local imports
 import utils.cli_args as cli_args  # isort: skip
@@ -46,14 +46,13 @@ simulation_app = app_launcher.app
 
 import torch
 
+import isaaclab.sim as sim_utils
+from isaaclab.assets import AssetBaseCfg
+from isaaclab.sensors import patterns
+from isaaclab.utils import configclass
 from omni.isaac.core.objects import VisualCuboid
 from omni.isaac.matterport.config import MatterportImporterCfg
 from omni.isaac.matterport.domains import MatterportRayCasterCfg
-
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.assets import AssetBaseCfg
-from omni.isaac.lab.sensors import patterns
-from omni.isaac.lab.utils import configclass
 
 import nav_tasks.sensors as nav_patterns
 

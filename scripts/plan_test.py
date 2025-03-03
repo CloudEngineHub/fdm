@@ -4,7 +4,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Script to train a Forward-Dynamics-Model"""
+"""Script to test the planning of the FDM.
+
+The script offers following modes:
+   - `--mode test`: **qualitative** evaluation in a test environment
+   - `--mode metric --env_type 2D`: **qualitative** evaluation in a 2D environment
+   - `--mode metric --env_type 3D`: **qualitative** evaluation in a 3D environment
+   - `--mode plot`: generate the Fig. **TODO** of the paper
+"""
 
 from __future__ import annotations
 
@@ -13,7 +20,7 @@ from __future__ import annotations
 
 import argparse
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 
 # local imports
 import utils.cli_args as cli_args  # isort: skip
@@ -92,7 +99,7 @@ torch.backends.cudnn.benchmark = False
 
 
 def add_env_cameras(planner: FDMPlanner):
-    from omni.isaac.sensor import Camera
+    from isaacsim.sensors.camera import Camera
 
     # add camera for each environment
     cameras = []

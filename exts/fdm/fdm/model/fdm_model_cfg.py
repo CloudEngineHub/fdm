@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from omni.isaac.lab.utils import configclass
+from isaaclab.utils import configclass
 
 from fdm import LARGE_UNIFIED_HEIGHT_SCAN
 

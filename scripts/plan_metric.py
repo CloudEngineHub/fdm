@@ -4,15 +4,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Script to evaluate planning performance against baseline methods
+"""Script to evaluate planning performance against baseline methods given random paths in a defined environment.
 
 Does a comparison of 10000 paths in simulation with the following methods:
-- MPPI using the FDM
+- MPPI using the presented FDM
+- MPPI using the baseline FDM
 - MPPI using a cost-map
-- ArtPlanner
-- MPPI using the perfect velocity model
-- MPPI using baseline FDM model
-- Oxford Planner
 """
 
 from __future__ import annotations
@@ -22,7 +19,7 @@ from __future__ import annotations
 
 import argparse
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 
 # local imports
 import utils.cli_args as cli_args  # isort: skip
@@ -65,9 +62,8 @@ import yaml
 
 import omni
 import wandb
+from isaaclab_tasks.utils import get_checkpoint_path
 from tabulate import tabulate
-
-from omni.isaac.lab_tasks.utils import get_checkpoint_path
 
 from fdm.env_cfg import TERRAIN_ANALYSIS_CFG
 from fdm.planner import FDMPlanner, get_planner_cfg
@@ -90,15 +86,15 @@ def load_planner() -> FDMPlanner:
     # define the number of runs
     cfg.env_cfg.commands.command.trajectory_config = (
         {
-            "num_paths": [10] * 4,
-            "max_path_length": list(range(4, 8)),
-            "min_path_length": list(range(3, 7)),
+            "num_paths": 40,
+            "max_path_length": 8,
+            "min_path_length": 3,
         }
         if args_cli.mode == "debug"
         else {
-            "num_paths": [200] * 5,
-            "max_path_length": list(range(4, 9)),
-            "min_path_length": list(range(3, 8)),
+            "num_paths": 1000,
+            "max_path_length": 8,
+            "min_path_length": 3,
         }
     )
     cfg.env_cfg.commands.command.traj_sampling.terrain_analysis.max_path_length = max(

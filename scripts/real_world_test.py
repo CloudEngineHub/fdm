@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import argparse
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 
 # local imports
 import utils.cli_args as cli_args  # isort: skip
@@ -64,13 +64,12 @@ from scipy.ndimage import distance_transform_edt
 from scipy.spatial.transform import Rotation, Slerp
 
 import cv2
+import isaaclab.utils.math as math_utils
+import isaacsim.core.utils.prims as prim_utils
 import kornia
-import omni.isaac.core.utils.prims as prim_utils
 import pypose as pp
-
-import omni.isaac.lab.utils.math as math_utils
-from omni.isaac.lab.markers import VisualizationMarkers
-from omni.isaac.lab.utils import configclass
+from isaaclab.markers import VisualizationMarkers
+from isaaclab.utils import configclass
 
 from fdm import LARGE_UNIFIED_HEIGHT_SCAN
 from fdm.data_buffers import TrajectoryDataset
@@ -81,7 +80,7 @@ from fdm.utils.colors import generate_colors
 
 # can only be imported if gui activated
 try:
-    from omni.isaac.debug_draw import _debug_draw as omni_debug_draw
+    from isaacsim.util.debug_draw import _debug_draw as omni_debug_draw
 except ImportError:
     omni_debug_draw = None
 

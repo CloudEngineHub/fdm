@@ -13,16 +13,15 @@ import torch
 
 import cv2
 import hydra
+import isaaclab.utils.math as math_utils
 import omegaconf
 import pypose as pp
 import seaborn as sns
-
-import omni.isaac.lab.utils.math as math_utils
-from omni.isaac.lab.envs import ManagerBasedRLEnv
-from omni.isaac.lab.markers import VisualizationMarkers
-from omni.isaac.lab.markers.config import BLUE_ARROW_X_MARKER_CFG
-from omni.isaac.lab.utils.io import dump_yaml
-from omni.isaac.lab_tasks.utils import get_checkpoint_path
+from isaaclab.envs import ManagerBasedRLEnv
+from isaaclab.markers import VisualizationMarkers
+from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG
+from isaaclab.utils.io import dump_yaml
+from isaaclab_tasks.utils import get_checkpoint_path
 
 from nav_collectors.terrain_analysis import TerrainAnalysis
 
@@ -35,7 +34,7 @@ from .sampling_planner import SimpleSE2TrajectoryOptimizer
 
 # can only be imported if gui activated
 try:
-    from omni.isaac.debug_draw import _debug_draw as omni_debug_draw
+    from isaacsim.util.debug_draw import _debug_draw as omni_debug_draw
 except ImportError:
     omni_debug_draw = None
 

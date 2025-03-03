@@ -11,9 +11,8 @@ from prettytable import PrettyTable
 from torch.utils.data import Dataset
 from typing import TYPE_CHECKING
 
+import isaaclab.utils.math as math_utils
 import pypose as pp
-
-import omni.isaac.lab.utils.math as math_utils
 
 from fdm import VEL_RANGE_X, VEL_RANGE_Y, VEL_RANGE_YAW
 

@@ -10,8 +10,8 @@ import math
 import os
 from dataclasses import MISSING
 
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.utils import configclass
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.utils import configclass
 
 import fdm.env_cfg as fdm_env_cfg
 import fdm.mdp as mdp

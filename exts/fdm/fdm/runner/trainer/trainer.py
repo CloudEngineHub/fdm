@@ -16,10 +16,9 @@ from prettytable import PrettyTable
 from torch.utils.data import ConcatDataset, DataLoader
 
 import wandb
-
-from omni.isaac.lab.utils.io import dump_yaml
-from omni.isaac.lab.utils.noise import NoiseCfg
-from omni.isaac.lab_tasks.utils import get_checkpoint_path
+from isaaclab.utils.io import dump_yaml
+from isaaclab.utils.noise import NoiseCfg
+from isaaclab_tasks.utils import get_checkpoint_path
 
 from fdm.data_buffers import ReplayBufferCfg, TrajectoryDataset
 from fdm.model import EmpiricalNormalization, FDMModel

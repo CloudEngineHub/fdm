@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import argparse
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 
 # local imports
 import utils.cli_args as cli_args  # isort: skip
@@ -37,7 +37,7 @@ parser.add_argument(
     "--paper-platform-figure", action="store_true", default=False, help="Run paper platform figure test."
 )
 parser.add_argument("--terrain_analysis_points", type=int, default=2000, help="Number of points for terrain analysis.")
-parser.add_argument("--record", action="store_true", default=True, help="Record the simulation.")
+parser.add_argument("--record", action="store_true", default=False, help="Record the simulation.")
 
 # append common FDM cli arguments
 cli_args.add_fdm_args(parser, default_num_envs=360)
@@ -73,11 +73,10 @@ import os
 import torch
 import torch.utils.benchmark as benchmark
 
-from omni.isaac.sensor import Camera
-
-import omni.isaac.lab.sim.spawners as sim_spawners
-from omni.isaac.lab.assets import AssetBaseCfg
-from omni.isaac.lab_tasks.utils import get_checkpoint_path
+import isaaclab.sim.spawners as sim_spawners
+from isaaclab.assets import AssetBaseCfg
+from isaaclab_tasks.utils import get_checkpoint_path
+from isaacsim.sensors.camera import Camera
 
 from nav_collectors.collectors import TrajectorySamplingCfg
 

@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from dataclasses import MISSING
 
-from omni.isaac.lab.managers import CommandTermCfg
-from omni.isaac.lab.utils import configclass
+from isaaclab.managers import CommandTermCfg
+from isaaclab.utils import configclass
 
 from .mixed_command_generator import MixedCommand
 

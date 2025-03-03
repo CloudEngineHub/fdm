@@ -4,11 +4,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Copyright (c) 2024 ETH Zurich (Robotic Systems Lab)
-# Author: Pascal Roth
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
 
 """Functions to generate different terrains using the ``trimesh`` library."""
 
@@ -18,8 +13,8 @@ import numpy as np
 import trimesh
 from typing import TYPE_CHECKING
 
-from omni.isaac.lab.terrains.trimesh.utils import *  # noqa: F401, F403
-from omni.isaac.lab.terrains.trimesh.utils import make_border, make_plane
+from isaaclab.terrains.trimesh.utils import *  # noqa: F401, F403
+from isaaclab.terrains.trimesh.utils import make_border, make_plane
 
 if TYPE_CHECKING:
     from . import rsl_stairs_cfg

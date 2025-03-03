@@ -6,11 +6,11 @@
 
 from __future__ import annotations
 
-from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
-from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.sensors import RayCasterCameraCfg, RayCasterCfg, patterns
-from omni.isaac.lab.utils import configclass
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.sensors import MultiMeshRayCasterCameraCfg, MultiMeshRayCasterCfg, patterns
+from isaaclab.utils import configclass
 
 import fdm.mdp as mdp
 
@@ -25,11 +25,11 @@ CAMERA_SIM_RESOLUTION_DECREASE_FACTOR = 6.0
 def modify_scene_cfg(scene_cfg: TerrainSceneCfg):
     # sensors
     # frontfacing ZED X Camera
-    scene_cfg.env_sensor = RayCasterCameraCfg(
+    scene_cfg.env_sensor = MultiMeshRayCasterCameraCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
         mesh_prim_paths=["/World/ground"],
         update_period=0,
-        offset=RayCasterCameraCfg.OffsetCfg(
+        offset=MultiMeshRayCasterCameraCfg.OffsetCfg(
             # pos=(0.4761, 0.0035, 0.1055), rot=(0.9961947, 0.0, 0.087155, 0.0), convention="world"  # 10 degrees
             pos=(0.4761, 0.0035, 0.1055),
             rot=(0.9914449, 0.0, 0.1305262, 0.0),
@@ -46,11 +46,11 @@ def modify_scene_cfg(scene_cfg: TerrainSceneCfg):
         ),
     )
     # rearfacing ZED X Camera
-    # env_sensor_rear = RayCasterCameraCfg(
+    # env_sensor_rear = MultiMeshRayCasterCameraCfg(
     #     prim_path="{ENV_REGEX_NS}/Robot/base",
     #     mesh_prim_paths=["/World/ground"],
     #     update_period=0,
-    #     offset=RayCasterCameraCfg.OffsetCfg(pos=(-0.4641, 0.0035, 0.1055), rot=(-0.001, 0.132, -0.005, 0.991), convention="world"),  # 10 degrees
+    #     offset=MultiMeshRayCasterCameraCfg.OffsetCfg(pos=(-0.4641, 0.0035, 0.1055), rot=(-0.001, 0.132, -0.005, 0.991), convention="world"),  # 10 degrees
     #     data_types=["distance_to_image_plane"],
     #     debug_vis=False,
     #     pattern_cfg=patterns.PinholeCameraPatternCfg(
@@ -61,11 +61,11 @@ def modify_scene_cfg(scene_cfg: TerrainSceneCfg):
     #     ),
     # )
     # left and right facing ZED X Mini Camera
-    scene_cfg.env_sensor_right = RayCasterCameraCfg(
+    scene_cfg.env_sensor_right = MultiMeshRayCasterCameraCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
         mesh_prim_paths=["/World/ground"],
         update_period=0,
-        offset=RayCasterCameraCfg.OffsetCfg(
+        offset=MultiMeshRayCasterCameraCfg.OffsetCfg(
             pos=(0.0203, -0.1056, 0.1748),
             rot=(0.6963642, 0.1227878, 0.1227878, -0.6963642),
             convention="world",  # 20 degrees
@@ -80,11 +80,11 @@ def modify_scene_cfg(scene_cfg: TerrainSceneCfg):
             width=int(960 / CAMERA_SIM_RESOLUTION_DECREASE_FACTOR),
         ),
     )
-    scene_cfg.env_sensor_left = RayCasterCameraCfg(
+    scene_cfg.env_sensor_left = MultiMeshRayCasterCameraCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
         mesh_prim_paths=["/World/ground"],
         update_period=0,
-        offset=RayCasterCameraCfg.OffsetCfg(
+        offset=MultiMeshRayCasterCameraCfg.OffsetCfg(
             pos=(0.0217, 0.1335, 0.1748),
             rot=(0.6963642, -0.1227878, 0.1227878, 0.6963642),
             convention="world",  # 20 degrees
@@ -198,9 +198,9 @@ class PreTrainingFDMDepthCfg(FDMDepthCfg):
         super().__post_init__()
 
         # add additional height scanner for supervision to the scene
-        self.scene.target_height_scan = RayCasterCfg(
+        self.scene.target_height_scan = MultiMeshRayCasterCfg(
             prim_path="{ENV_REGEX_NS}/Robot/base",
-            offset=RayCasterCfg.OffsetCfg(pos=(1.75, 0.0, 0.5)),
+            offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(1.75, 0.0, 0.5)),
             attach_yaw_only=True,
             pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=(4.5, 5.9)),
             debug_vis=True,

@@ -15,18 +15,18 @@ BASELINE_FDM_MODEL="Jan30_18-56-04_local_4mLiDAR-2DEnv"
 # 2D Environment
 ###
 
-# ${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm/scripts/plan_test.py \
+# ${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm_sub/scripts/plan_test.py \
 #     --run ${MODEL_FDM} \
 #     --mode metric \
 #     --env_type 2D \
 #     --reduced_obs --occlusion --remove_torque
 
-${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm/scripts/plan_test.py \
+${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm_sub/scripts/plan_test.py \
     --run ${BASELINE_FDM_MODEL} --env baseline \
     --mode metric \
     --env_type 2D \
 
-# ${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm/scripts/plan_test.py \
+# ${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm_sub/scripts/plan_test.py \
 #     --run ${MODEL_FDM} --env heuristic \
 #     --mode metric \
 #     --env_type 2D \
@@ -36,18 +36,18 @@ ${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm/scripts/plan_test.py \
 # 2D Environment
 ###
 
-# ${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm/scripts/plan_test.py \
+# ${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm_sub/scripts/plan_test.py \
 #     --run ${MODEL_FDM} \
 #     --mode metric \
 #     --env_type 3D \
 #     --reduced_obs --occlusion --remove_torque
 
-${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm/scripts/plan_test.py \
+${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm_sub/scripts/plan_test.py \
     --run ${BASELINE_FDM_MODEL} --env baseline \
     --mode metric \
     --env_type 3D \
 
-# ${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm/scripts/plan_test.py \
+# ${ISAACLAB_HOME}/isaaclab.sh -p ${ISAACLAB_HOME}/fdm_sub/scripts/plan_test.py \
 #     --run ${MODEL_FDM} --env heuristic \
 #     --mode metric \
 #     --env_type 3D \

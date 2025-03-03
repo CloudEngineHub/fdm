@@ -1,5 +1,5 @@
 asset_path: /home/pascal/orbit/anymal_d_urdf/urdf/anymal.urdf
-usd_dir: /home/pascal/orbit/IsaacLab/fdm/exts/fdm/data/ANYmal-D-New
+usd_dir: /home/pascal/orbit/IsaacLab/fdm_sub/exts/fdm/data/ANYmal-D-New
 usd_file_name: anymal_d.usd
 force_usd_conversion: true
 make_instanceable: true

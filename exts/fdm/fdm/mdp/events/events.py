@@ -13,16 +13,16 @@ import numpy as np
 import torch
 from typing import TYPE_CHECKING
 
-from omni.isaac.lab.assets import Articulation, RigidObject
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.utils.math import quat_apply_yaw, quat_from_euler_xyz, sample_uniform
+from isaaclab.assets import Articulation, RigidObject
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.utils.math import quat_apply_yaw, quat_from_euler_xyz, sample_uniform
 
 from nav_tasks.mdp import FixGoalCommand, GoalCommand
 
 from ..commands import MixedCommand
 
 if TYPE_CHECKING:
-    from omni.isaac.lab.envs import ManagerBasedEnv, ManagerBasedRLEnv
+    from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv
 
 
 def randomize_rigid_body_material_uniform_static_dynamic_friction(

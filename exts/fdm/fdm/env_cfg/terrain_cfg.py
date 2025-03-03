@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import omni.isaac.lab.terrains as terrain_gen
+import isaaclab.terrains as terrain_gen
 
 import nav_tasks.terrains as fdm_terrain_gen
 

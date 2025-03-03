@@ -4,18 +4,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Copyright (c) 2024 ETH Zurich (Robotic Systems Lab)
-# Author: Pascal Roth
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
 
 import torch
 from collections.abc import Callable
 from dataclasses import MISSING
 
-from omni.isaac.lab.managers import ObservationTermCfg, SceneEntityCfg
-from omni.isaac.lab.utils import configclass
+from isaaclab.managers import ObservationTermCfg, SceneEntityCfg
+from isaaclab.utils import configclass
 
 from .max_contact_observation import MaxContactForceObs
 

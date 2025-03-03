@@ -6,7 +6,7 @@ ISAACLAB_HOME=/home/pascal/orbit/IsaacLab
 # ./docker/cluster/cluster_interface.sh job base fdm --mode train --run_name MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048
 # ./docker/cluster/cluster_interface.sh job base fdm --mode train --run_name MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_VelAccLoss0.5
 # Reduced Observation
-# ./docker/cluster/cluster_interface.sh job base fdm --mode train --run_name MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_reducedObs_Occlusion --reduced_obs --occlusions
+./docker/cluster/cluster_interface.sh job base fdm --mode train --run_name MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_reducedObs_Occlusion --reduced_obs --occlusions
 # ./docker/cluster/cluster_interface.sh job base fdm --mode train --run_name MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_UniColl_NOPreTrained_Bs2048_reducedObs_Occlusion_NoTorque --reduced_obs --occlusions --remove_torque
 # Noise + Reduced Observation
 # ./docker/cluster/cluster_interface.sh job base fdm --mode train --run_name MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_Noise_reducedObs_Occlusion_NewHeightScanNoise --noise --reduced_obs --occlusions
@@ -50,5 +50,5 @@ ISAACLAB_HOME=/home/pascal/orbit/IsaacLab
 
 
 ### BASELINE
-./docker/cluster/cluster_interface.sh job base fdm --mode train --env baseline --run_name Baseline_NewEnv_NewCollisionShape_CorrLidar_UnifiedCollLoss_2DEnvPillar_NoBatchNorm
-./docker/cluster/cluster_interface.sh job base fdm --mode train --env baseline --run_name Baseline_NewEnv_NewCollisionShape_CorrLidar_UnifiedCollLoss_2DEnvPillar_NoBatchNorm_noise --noise
+# ./docker/cluster/cluster_interface.sh job base fdm --mode train --env baseline --run_name Baseline_NewEnv_NewCollisionShape_CorrLidar_UnifiedCollLoss_2DEnvPillar_NoBatchNorm
+# ./docker/cluster/cluster_interface.sh job base fdm --mode train --env baseline --run_name Baseline_NewEnv_NewCollisionShape_CorrLidar_UnifiedCollLoss_2DEnvPillar_NoBatchNorm_noise --noise

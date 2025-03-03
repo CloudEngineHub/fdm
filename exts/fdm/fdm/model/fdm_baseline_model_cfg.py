@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from omni.isaac.lab.utils import configclass
+from isaaclab.utils import configclass
 
 from .fdm_baseline_model import FDMBaseline
 from .model_base_cfg import BaseModelCfg

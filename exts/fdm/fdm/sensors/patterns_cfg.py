@@ -8,8 +8,8 @@
 
 from __future__ import annotations
 
-from omni.isaac.lab.sensors.ray_caster.patterns.patterns_cfg import PatternBaseCfg
-from omni.isaac.lab.utils import configclass
+from isaaclab.sensors.ray_caster.patterns.patterns_cfg import PatternBaseCfg
+from isaaclab.utils import configclass
 
 from . import patterns
 

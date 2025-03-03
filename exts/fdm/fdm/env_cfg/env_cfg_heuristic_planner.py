@@ -6,11 +6,11 @@
 
 from __future__ import annotations
 
-from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
-from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.sensors import RayCasterCfg, patterns
-from omni.isaac.lab.utils import configclass
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.sensors import MultiMeshRayCasterCfg, patterns
+from isaaclab.utils import configclass
 
 import fdm.mdp as mdp
 
@@ -25,9 +25,9 @@ from .env_cfg_base import FDMCfg, TerrainSceneCfg
 class HeuristicsHeightTerrainSceneCfg(TerrainSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
 
-    env_sensor = RayCasterCfg(
+    env_sensor = MultiMeshRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
-        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 1.0)),
+        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 1.0)),
         attach_yaw_only=True,
         pattern_cfg=patterns.GridPatternCfg(resolution=0.04, size=(7.96, 7.96)),
         debug_vis=False,

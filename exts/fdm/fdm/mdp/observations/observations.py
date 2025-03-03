@@ -11,19 +11,19 @@ import torch
 from dataclasses import MISSING
 from typing import TYPE_CHECKING
 
-import omni.isaac.lab.utils.math as math_utils
-from omni.isaac.lab.actuators import ActuatorNetMLP
-from omni.isaac.lab.assets import Articulation
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.sensors import ContactSensor, RayCaster, RayCasterCamera
-from omni.isaac.lab.sim import SimulationContext
-from omni.isaac.lab.utils import configclass
-from omni.isaac.lab.utils.warp import raycast_dynamic_meshes
+import isaaclab.utils.math as math_utils
+from isaaclab.actuators import ActuatorNetMLP
+from isaaclab.assets import Articulation
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.sensors import ContactSensor, MultiMeshRayCaster, RayCaster, RayCasterCamera
+from isaaclab.sim import SimulationContext
+from isaaclab.utils import configclass
+from isaaclab.utils.warp import raycast_dynamic_meshes
 
 from nav_tasks.mdp import GoalCommand
 
 if TYPE_CHECKING:
-    from omni.isaac.lab.envs import ManagerBasedEnv, ManagerBasedRLEnv
+    from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv
 
     from fdm.mdp import MixedCommand, NavigationSE2Action
 
@@ -244,7 +244,8 @@ def height_scan_door_recognition(
     Explicitly account for doors in the scene."""
 
     # extract the used quantities (to enable type-hinting)
-    sensor: RayCaster = env.scene.sensors[sensor_cfg.name]
+    sensor: MultiMeshRayCaster = env.scene.sensors[sensor_cfg.name]
+    assert isinstance(sensor, MultiMeshRayCaster), "The sensor must be a MultiMeshRayCaster."
 
     # get the sensor hit points
     ray_origins = sensor.data.ray_hits_w.clone()
@@ -359,8 +360,9 @@ class HeightScanOcculusionModifier:
 
     def _setup(self, env: ManagerBasedRLEnv):
         # extract the used quantities (to enable type-hinting)
-        self._sensor: RayCaster = env.scene.sensors[self.cfg.sensor_cfg.name]
+        self._sensor: MultiMeshRayCaster = env.scene.sensors[self.cfg.sensor_cfg.name]
         self._asset: Articulation = env.scene[self.cfg.asset_cfg.name]
+        assert isinstance(self._sensor, MultiMeshRayCaster), "The sensor must be a MultiMeshRayCaster."
         # account for the sensor offset
         if self.cfg.sensor_offsets is not None:
             if isinstance(self.cfg.sensor_offsets[0], list):
@@ -473,8 +475,9 @@ def height_scan_square_exp_occlu(
     Explicitly account for occulsions of the terrain."""
 
     # extract the used quantities (to enable type-hinting)
-    sensor: RayCaster = env.scene.sensors[sensor_cfg.name]
+    sensor: MultiMeshRayCaster = env.scene.sensors[sensor_cfg.name]
     asset: Articulation = env.scene[asset_cfg.name]
+    assert isinstance(sensor, MultiMeshRayCaster), "The sensor must be a MultiMeshRayCaster."
 
     # get the sensor hit points
     ray_hits = sensor.data.ray_hits_w.clone()

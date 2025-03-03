@@ -21,14 +21,13 @@ from torch.utils.data import DataLoader
 import carb
 import cv2
 import hydra
+import isaaclab.utils.math as math_utils
 import omegaconf
 import pypose as pp
 import wandb
-
-import omni.isaac.lab.utils.math as math_utils
-from omni.isaac.lab.envs import ManagerBasedRLEnv
-from omni.isaac.lab.utils.io import dump_yaml
-from omni.isaac.lab_tasks.utils import get_checkpoint_path
+from isaaclab.envs import ManagerBasedRLEnv
+from isaaclab.utils.io import dump_yaml
+from isaaclab_tasks.utils import get_checkpoint_path
 
 from fdm import LARGE_UNIFIED_HEIGHT_SCAN, PAPER_COLORS_RGBA_F, VEL_RANGE_X, VEL_RANGE_Y
 from fdm.data_buffers import ReplayBuffer
@@ -42,7 +41,7 @@ from .trainer import Trainer
 
 # can only be imported if gui activated
 try:
-    from omni.isaac.debug_draw import _debug_draw as omni_debug_draw
+    from isaacsim.util.debug_draw import _debug_draw as omni_debug_draw
 except ImportError:
     omni_debug_draw = None
 

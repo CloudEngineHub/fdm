@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from omni.isaac.lab.utils.configclass import configclass
+from isaaclab.utils.configclass import configclass
 
 from .base_agent import Agent
 

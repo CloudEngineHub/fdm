@@ -8,8 +8,7 @@ import torch
 import torch.nn as nn
 
 import pypose as pp
-
-from omni.isaac.lab.utils.math import euler_xyz_from_quat
+from isaaclab.utils.math import euler_xyz_from_quat
 
 
 def state_history_transformer(

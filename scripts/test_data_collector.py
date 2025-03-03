@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Script to train a Forward-Dynamics-Model"""
+"""Script to collect data in an environment for evaluation during training."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import argparse
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 
 # local imports
 import utils.cli_args as cli_args  # isort: skip
@@ -43,10 +43,9 @@ import pickle
 import torch
 from dataclasses import MISSING
 
+import isaaclab.sim as sim_utils
 import omni
-
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.terrains import TerrainImporterCfg
+from isaaclab.terrains import TerrainImporterCfg
 
 import fdm.mdp as mdp
 import fdm.runner as fdm_runner_cfg

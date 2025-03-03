@@ -9,8 +9,8 @@ from __future__ import annotations
 import torch
 from collections.abc import Callable
 
-from omni.isaac.lab.utils import configclass
-from omni.isaac.lab.utils.noise import NoiseCfg, UniformNoiseCfg
+from isaaclab.utils import configclass
+from isaaclab.utils.noise import NoiseCfg, UniformNoiseCfg
 
 from . import noise
 

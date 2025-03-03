@@ -16,10 +16,9 @@ import torch.nn.functional as F
 from scipy.spatial.distance import cdist
 from typing import TYPE_CHECKING
 
+from isaaclab.envs import ManagerBasedRLEnv
+from isaaclab.utils.timer import Timer
 from skimage.draw import line
-
-from omni.isaac.lab.envs import ManagerBasedRLEnv
-from omni.isaac.lab.utils.timer import Timer
 
 from nav_collectors.terrain_analysis import TerrainAnalysis
 
