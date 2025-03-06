@@ -176,6 +176,11 @@ To train the Forward Dynamics Model, follow these steps:
    - [Model Configs](exts/fdm/fdm/model)
    - [Trainer/ Runner Configs (optimizer, learning rate, collection intervals)](exts/fdm/fdm/runner)
 
+   **Note**: For wandb logging during training, you need to set the following environment variables:
+   - `WANDB_API_KEY`: Your Weights & Biases API key (required)
+   - `WANDB_ENTITY`: Your Weights & Biases entity/username (can also be set in [TrainerCfg](exts/fdm/fdm/runner/trainer/trainer_cfg.py))
+   - `WANDB_MODE`: Wandb mode, defaults to "online" if not set (can also be set in [TrainerCfg](exts/fdm/fdm/runner/trainer/trainer_cfg.py))
+
    During the training, evaluation steps in test environments can be performed. The data for those environments in typically pre-collected and remains constant for different trainings. The dataset paths can be defined in the [TrainerCfg](exts/fdm/fdm/runner/trainer/trainer_cfg.py). The collected of the datasets is done by executing:
 
    ```bash

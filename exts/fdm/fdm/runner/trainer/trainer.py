@@ -545,17 +545,23 @@ class Trainer:
 
         # init wandb logging
         if self.cfg.logging:
-            os.environ["WANDB_API_KEY"] = self.cfg.wb_api_key
-            os.environ["WANDB_MODE"] = "online"
+            # Use environment variables for wandb configuration
+            wb_entity = self.cfg.wb_entity or os.getenv("WANDB_ENTITY")
+            wb_mode = self.cfg.wb_mode or os.getenv("WANDB_MODE", "online")
+            wb_api_key = os.getenv("WANDB_API_KEY")
+
+            if not wb_api_key:
+                print("[WARNING] WANDB_API_KEY environment variable not set. Wandb logging will be disabled.")
+                return
 
             try:
                 wandb.init(
                     project=self.cfg.experiment_name,
-                    entity=self.cfg.wb_entity,
+                    entity=wb_entity,
                     name=log_name,
                     config=self.cfg.to_dict(),
                     dir=self.log_dir,
-                    mode=self.cfg.wb_mode,
+                    mode=wb_mode,
                 )
                 wandb.watch(self.model)
             except:  # noqa: E722

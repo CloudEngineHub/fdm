@@ -130,17 +130,22 @@ def main():
 
     # init wandb logging
     if args_cli.mode == "full":
-        os.environ["WANDB_API_KEY"] = "8d9b2277691e6b27dc2861ce2bc7c0148113c3ce"
-        os.environ["WANDB_MODE"] = "online"
+        wb_entity = os.getenv("WANDB_ENTITY")
+        wb_mode = os.getenv("WANDB_MODE", "online")
+        wb_api_key = os.getenv("WANDB_API_KEY")
+
+        if not wb_api_key:
+            print("[WARNING] WANDB_API_KEY environment variable not set. Wandb logging will be disabled.")
+            return
 
         try:
             wandb.init(
                 project="planner_eval",
-                entity="rothpa",
+                entity=wb_entity,
                 name=args_cli.run,
                 config=planner.cfg.to_dict() | planner.planner_cfg,
                 dir=os.path.join("logs", "fdm", "fdm_se2_prediction_depth", args_cli.run),
-                mode="online",
+                mode=wb_mode,
             )
         except:  # noqa: E722
             print("[WARNING: Wandb not available")

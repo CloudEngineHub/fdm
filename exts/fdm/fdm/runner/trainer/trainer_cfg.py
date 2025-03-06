@@ -80,10 +80,10 @@ class TrainerBaseCfg:
     """Name of the experiment. """
     run_name: str | None = None
     """Name of the run."""
-    wb_entity: str = "rothpa"
-    wb_api_key: str = "8d9b2277691e6b27dc2861ce2bc7c0148113c3ce"
-    wb_mode: str = "online"
-    """Wandb project name and api key."""
+    wb_entity: str | None = None
+    """Wandb entity name. If None, will use WANDB_ENTITY environment variable."""
+    wb_mode: str | None = None
+    """Wandb mode. If None, will use WANDB_MODE environment variable."""
 
     # resume and load checkpoint
     resume: bool = False
