@@ -44,11 +44,6 @@ args_cli = parser.parse_args()
 args_cli.headless = args_cli.mode != "debug"
 args_cli.num_envs = 2 if args_cli.mode == "debug" else 200
 
-# FIXME: remove later, currently for faster debug
-args_cli.reduced_obs = True
-args_cli.occlusions = True
-args_cli.remove_torque = True
-
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app

@@ -73,6 +73,13 @@ For details on the IsaacLab extensions, see the [README](exts/fdm/docs/README.md
    git submodule update --init --recursive
    ```
 
+   Download the assets from git lfs (Install instructions [here](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage))
+   ```
+   cd fdm_sub
+   git lfs pull
+   cd ..
+   ```
+
 3. **Link the extensions into the source directory:**
    ```bash
    cd source
@@ -80,9 +87,9 @@ For details on the IsaacLab extensions, see the [README](exts/fdm/docs/README.md
    ```
    In addition, the FDM implementation depends on the [isaac-nav-suite](https://github.com/leggedrobotics/isaac-nav-suite) which is already included as a submodule in the FDM repo. Also the nav-suite extensions need to be linked into the source directory. Then leave the source directory.
    ```bash
-   ln -s ../fdm_sub/isaac_nav_suite/exts/nav_importer .
-   ln -s ../fdm_sub/isaac_nav_suite/exts/nav_collectors .
-   ln -s ../fdm_sub/isaac_nav_suite/exts/nav_tasks .
+   ln -s ../fdm_sub/isaac-nav-suite/exts/nav_importer .
+   ln -s ../fdm_sub/isaac-nav-suite/exts/nav_collectors .
+   ln -s ../fdm_sub/isaac-nav-suite/exts/nav_tasks .
    cd ..
    ```
 

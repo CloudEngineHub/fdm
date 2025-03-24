@@ -49,7 +49,7 @@ def get_planner_cfg(
             "terminal_cost_close_reward": 10,  # 500,
             "terminal_cost_use_threshold": True,  # no puling towards the goal
             "collision_cost_traj_factor": 0.0,  # 0.5
-            "collision_cost_high_risk_factor": 1000,  # 1000
+            "collision_cost_high_risk_factor": 1000.0,  # normal model:1000, no risk ablation: 0.0
             "pp_safe_th": 0.3,
             "pp_risky_th": 0.4,
             "pp_fatal_th": 0.8,
@@ -64,9 +64,9 @@ def get_planner_cfg(
             "_target_": "fdm.planner.BatchedMPPIOptimizer",
             "num_iterations": 1,
             "population_size": population_size,
-            "gamma": 2.0,  # 0.91,  # FIXME: debug for baseline planning  (before 1.0)
+            "gamma": 1.0,  # 2.0,  # 0.91,  # FIXME: debug for baseline planning  (before 1.0)
             "sigma": 0.87,  # 0.87,
-            "beta": 0.2,  # 0.08, 0.5  # FIXME: debug for baseline planning  (before 0.6)
+            "beta": 0.6,  # 0.2,  # 0.08, 0.5  # FIXME: debug for baseline planning  (before 0.6)
             "lower_bound": ["${action_cfg.lower_bound}" for i in range(traj_dim)],
             "upper_bound": ["${action_cfg.upper_bound}" for i in range(traj_dim)],
             "device": device,

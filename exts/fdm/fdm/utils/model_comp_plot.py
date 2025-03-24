@@ -460,6 +460,7 @@ class ViolinPlotter:
         percept_range_relax_factor: float = 0.0,
         correct_collision_estimation_split: bool = False,
         height_scan_plots: bool = False,
+        ablation_mode: str | None = None,
     ):
         """
         Vilion Plot constructor.
@@ -476,6 +477,7 @@ class ViolinPlotter:
             percept_range_relax_factor: Factor to relax the percept range filter
             correct_collision_estimation_split: Create an extra plot for the correct collision estimation samples
             height_scan_plots: Create the height scan plots with the prediction, ground truth, and perfect velocity positions
+            ablation_mode: Ablation mode to use for the plot
         """
 
         self.steps = steps
@@ -488,6 +490,7 @@ class ViolinPlotter:
         self.percept_range_relax_factor = percept_range_relax_factor
         self.correct_collision_estimation_split = correct_collision_estimation_split
         self.height_scan_plots = height_scan_plots
+        self.ablation_mode = ablation_mode
 
         # expand models by nn-interpolated data models
         if self.nearest_neighbor_interpolation:
@@ -613,6 +616,15 @@ class ViolinPlotter:
             #     below_min_height_count += torch.sum(below_min_height_diff_idx).item()
             #     if torch.any(below_min_height_diff_idx):
             #         inputs = [inp[~below_min_height_diff_idx] for inp in inputs]
+
+            # for ablation studies that zero out the input
+            if self.ablation_mode is not None and not baseline:
+                if self.ablation_mode == "no_height_scan":
+                    inputs[2] = torch.zeros_like(inputs[2])
+                elif self.ablation_mode == "no_proprio_obs":
+                    inputs[1] = torch.zeros_like(inputs[1])
+                elif self.ablation_mode == "no_state_obs":
+                    inputs[0] = torch.zeros_like(inputs[0])
 
             outputs = model(inputs[:5])
             collision_idx = torch.any(inputs[5][..., 4].to(model.device) == 1, dim=1)

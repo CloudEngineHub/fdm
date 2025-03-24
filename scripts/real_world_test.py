@@ -536,7 +536,6 @@ class RealWorldData:
                 .unsqueeze(0)
                 .unsqueeze(0)
                 .repeat(args_cli.num_envs, 1, 1, 1),
-                # FIXME: future actions or the current ones?  --> is the anymal msg the current applied ones?  CHECK ONES DATA RECORDING WITH PLANNER
                 actions=observations_proprioceptive[step_idx + 1, :3].repeat(args_cli.num_envs, 1),
                 dones=torch.zeros(args_cli.num_envs, dtype=torch.bool),
                 feet_contact=torch.ones(args_cli.num_envs, dtype=torch.bool),

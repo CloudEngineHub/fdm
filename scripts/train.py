@@ -62,11 +62,6 @@ elif args_cli.mode == "eval":
     args_cli.num_envs = 2048
     args_cli.terrain_analysis_points = 5000
 
-# args_cli.resume = "Jan29_17-25-19_local_test"
-# args_cli.resume = "Jan29_14-40-33"
-# args_cli.env = "baseline"
-# args_cli.num_envs = 4096
-
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
@@ -79,7 +74,13 @@ import torch
 import omni
 
 from fdm.runner import FDMRunner
-from fdm.utils.args_cli_utils import cfg_modifier_pre_init, env_modifier_post_init, robot_changes, runner_cfg_init
+from fdm.utils.args_cli_utils import (
+    ablation_studies_modifications,
+    cfg_modifier_pre_init,
+    env_modifier_post_init,
+    robot_changes,
+    runner_cfg_init,
+)
 from fdm.utils.model_comp_plot import ViolinPlotter, meta_summarize, plot_metrics_with_grid
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -95,6 +96,8 @@ def load_cfg():
     cfg = robot_changes(cfg, args_cli)
     # modify cfg
     cfg = cfg_modifier_pre_init(cfg, args_cli)
+    # adjust for the ablation studies
+    cfg = ablation_studies_modifications(cfg, args_cli)
     return cfg
 
 

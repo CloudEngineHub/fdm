@@ -1020,10 +1020,6 @@ class FDMModelVelocityMultiStep(FDMModel):
         # residual connection to velocity command
         corr_vel = corr_vel + actions
 
-        # FIXME: ONLY FOR INFERENCE - MAYBE ????
-        # cancel out actions with large corrections
-        # corr_vel[corr_vel / actions < 0.3] = 0.0
-
         # get the resulting change in position and angle when applying the commands perfectly
         # velocity command units x: [m/s], y: [m/s], phi: [rad/s]
         corr_distance = corr_vel * self.param_command_timestep

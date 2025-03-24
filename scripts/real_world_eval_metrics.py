@@ -60,11 +60,6 @@ args_cli.headless = True
 # require reduced obs
 args_cli.reduced_obs = True
 
-# FIXME: remove this later, currently needed to run the script faster
-args_cli.noise = True
-args_cli.remove_torque = True
-args_cli.occlusions = True
-
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app

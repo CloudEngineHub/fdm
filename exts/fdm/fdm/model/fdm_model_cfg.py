@@ -97,7 +97,7 @@ class FDMBaseModelCfg(BaseModelCfg):
         "velocity": 0.0,
         "acceleration": 0.0,
         "stop": 1.0,
-        "energy": 1.0,
+        "energy": 0.0,
     }
     """Loss weights for the different terms."""
     progress_scaling: dict[str, bool] = {
@@ -135,6 +135,8 @@ class FDMBaseModelCfg(BaseModelCfg):
 
     The states are recorded at a frequency of ``command_timestep / history_length``.
     """
+    history_time_step: float | None = None
+    """Time step of the history. If None, the time step is ``command_timestep / history_length``."""
     collision_threshold: float = 0.5
     """Collision threshold for the collision prediction. Default is 0.5."""
     eval_distance_interval: float = 1.0

@@ -34,9 +34,7 @@ parser.add_argument(
     help="Name of the run.",
 )
 parser.add_argument("--terrain_analysis_points", type=int, default=10000, help="Number of points for terrain analysis.")
-parser.add_argument(
-    "--mode", type=str, default="metric", choices=["metric", "test", "plot"], help="Mode of the script."
-)
+parser.add_argument("--mode", type=str, default="test", choices=["metric", "test", "plot"], help="Mode of the script.")
 parser.add_argument("--env_type", type=str, default="2D", choices=["2D", "3D"], help="Specific environment to pick.")
 parser.add_argument(
     "--cost_show",
@@ -53,6 +51,7 @@ AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
 args_cli = parser.parse_args()
 
+# script modes
 if args_cli.mode == "test":
     args_cli.num_envs = 24
 elif args_cli.mode == "metric":
@@ -60,19 +59,6 @@ elif args_cli.mode == "metric":
     args_cli.headless = True
 elif args_cli.mode == "plot":
     args_cli.num_envs = 5
-
-# FIXME: remove later
-args_cli.reduced_obs = True
-args_cli.occlusion = True
-args_cli.remove_torque = True
-# args_cli.env = "heuristic"
-args_cli.env = "baseline"
-args_cli.run = "Jan30_18-56-04_local_4mLiDAR-2DEnv"
-# args_cli.run = "Jan13_15-36-24_Baseline_NewEnv_NewCollisionShape_CorrLidar"
-# args_cli.run = "Jan20_21-15-35_Baseline_NewEnv_NewCollisionShape_CorrLidar_UnifiedCollLoss"
-# args_cli.run = "Jan28_23-21-22_Baseline_NewEnv_NewCollisionShape_CorrLidar_UnifiedCollLoss_2DEnvPillar_NoBatchNorm_noise"
-# args_cli.run = "Jan28_22-45-54_Baseline_NewEnv_NewCollisionShape_CorrLidar_UnifiedCollLoss_2DEnv_NoBatchNorm"
-# args_cli.num_envs = 5
 
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
@@ -90,7 +76,13 @@ from fdm.env_cfg import TERRAIN_ANALYSIS_CFG
 
 # activate planner mode
 from fdm.planner import FDMPlanner, get_planner_cfg
-from fdm.utils.args_cli_utils import cfg_modifier_pre_init, env_modifier_post_init, planner_cfg_init, robot_changes
+from fdm.utils.args_cli_utils import (
+    ablation_studies_modifications,
+    cfg_modifier_pre_init,
+    env_modifier_post_init,
+    planner_cfg_init,
+    robot_changes,
+)
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
@@ -115,7 +107,7 @@ def add_env_cameras(planner: FDMPlanner):
 
 def main():
     # reduce required number of samples for the terrain analysis
-    if args_cli.mode == "test" or args_cli.mode == "plot":
+    if args_cli.mode in ["test", "plot"]:
         args_cli.terrain_analysis_points = 2000
 
     # setup runner
@@ -124,6 +116,8 @@ def main():
     cfg = robot_changes(cfg, args_cli)
     # modify cfg
     cfg = cfg_modifier_pre_init(cfg, args_cli)
+    # ablation studies
+    cfg = ablation_studies_modifications(cfg, args_cli)
 
     # swap environment
     cfg.env_cfg.scene.terrain.terrain_type = "generator"
@@ -138,7 +132,6 @@ def main():
         # change the initial spawning and resetting function
         cfg.env_cfg.events.reset_base.func = mdp.reset_root_state_planner_paper_plot
         cfg.env_cfg.events.reset_base.params = {}
-
     else:
         raise ValueError(f"Invalid mode {args_cli.mode} and env_type {args_cli.env_type}")
 
@@ -151,12 +144,8 @@ def main():
 
     # modify the reset function for the robot base state
     if args_cli.mode != "plot":
-        if args_cli.mode == "test":
-            # remove the randomization of yaw in the reset_base event
-            cfg.env_cfg.events.reset_base.params["yaw_range"] = (0.0, 0.0)
-        else:
-            # restrict initial yaw angle
-            cfg.env_cfg.events.reset_base.params["yaw_range"] = (0.0, 0.0)  # (-0.1, 0.1)
+        # remove the randomization of yaw in the reset_base event
+        cfg.env_cfg.events.reset_base.params["yaw_range"] = (0.0, 0.0)
         # enable that it is spawned relative to the env origin
         cfg.env_cfg.events.reset_base.params["spawn_in_env_frame"] = False
         # remove the velocity randomization in the reset_base event
@@ -205,7 +194,7 @@ def main():
         sampling_planner_cfg_dict["to_cfg"]["num_neighbors"] = 4
         sampling_planner_cfg_dict["optim"]["population_size"] = 1024
         sampling_planner_cfg_dict["to_cfg"]["collision_cost_safety_factor"] = 0.1
-    elif args_cli.env == "fdm":
+    elif args_cli.env == "height":
         # Elevate height scan to make sure all obstacles are captured
         pos_offset = list(cfg.env_cfg.scene.env_sensor.offset.pos)
         pos_offset[2] = 2.0

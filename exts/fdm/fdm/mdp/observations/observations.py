@@ -187,7 +187,7 @@ def raycast_depth_camera_data(env: ManagerBasedRLEnv, sensor_cfg: SceneEntityCfg
     sensor: RayCasterCamera = env.scene.sensors[sensor_cfg.name]
 
     # return the data
-    output = sensor.camera_data.output[data_type].clone().unsqueeze(-1)
+    output = sensor.data.output[data_type].clone().unsqueeze(-1)
     output[torch.isnan(output)] = sensor.cfg.max_distance
     output[torch.isinf(output)] = sensor.cfg.max_distance
 

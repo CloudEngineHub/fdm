@@ -21,7 +21,7 @@ def lidar2d_pattern(cfg: patterns_cfg.Lidar2DPatternCfg, device: str) -> tuple[t
     y = torch.sin(yaw)
     z = torch.zeros_like(x)
 
-    ray_directions = -torch.stack([x, y, z], dim=1)
+    ray_directions = torch.stack([x, y, z], dim=1)
     ray_starts = torch.zeros_like(ray_directions)
 
     return ray_starts, ray_directions

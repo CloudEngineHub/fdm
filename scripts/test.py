@@ -56,13 +56,6 @@ elif args_cli.paper_platform_figure:
     args_cli.enable_cameras = True
     args_cli.terrain_analysis_points = 500
 
-# FIXME: remove later
-# args_cli.runs = "Jan29_21-30-14_local_4mLiDAR"
-# args_cli.env = "baseline"
-args_cli.remove_torque = True
-args_cli.reduced_obs = True
-args_cli.occlusion = True
-
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app

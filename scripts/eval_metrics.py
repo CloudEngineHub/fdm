@@ -20,7 +20,6 @@ import utils.cli_args as cli_args  # isort: skip
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
-parser.add_argument("--regular", action="store_true", default=False, help="Spawn robots in a regular pattern.")
 parser.add_argument(
     "--runs",
     type=str,
@@ -28,7 +27,6 @@ parser.add_argument(
     default="Nov19_20-56-45_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_reducedObs_Occlusion_NoEarlyCollFilter_NoTorque",
     help="Name of the run.",
 )
-# parser.add_argument("--runs", type=str, nargs="+", default="Dec03_20-27-43_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_Noise_reducedObs_Occlusion_NoTorque_NewHeightScanNoise_NewNNTrainNoise_SchedEp10_Wait4_Decay5e5", help="Name of the run.")
 parser.add_argument("--equal-actions", action="store_true", default=False, help="Have the same actions for all envs.")
 parser.add_argument("--only_test_envs", action="store_true", default=True, help="Only test on the test environments.")
 parser.add_argument("--terrain_analysis_points", type=int, default=2000, help="Number of points for terrain analysis.")
@@ -42,12 +40,6 @@ AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 args_cli.headless = True
 
-# DEBUG
-args_cli.noise = False
-args_cli.reduced_obs = True
-args_cli.occlusion = False
-args_cli.remove_torque = True
-
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
@@ -60,9 +52,13 @@ import torch
 
 import omni
 
-import fdm.mdp as mdp
 import fdm.runner as fdm_runner_cfg
-from fdm.utils.args_cli_utils import cfg_modifier_pre_init, robot_changes, runner_cfg_init
+from fdm.utils.args_cli_utils import (
+    ablation_studies_modifications,
+    cfg_modifier_pre_init,
+    robot_changes,
+    runner_cfg_init,
+)
 from fdm.utils.model_comp_plot import ViolinPlotter, meta_summarize, plot_metrics_with_grid
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -78,6 +74,8 @@ def load_cfg():
     cfg = robot_changes(cfg, args_cli)
     # modify cfg
     cfg = cfg_modifier_pre_init(cfg, args_cli, dataset_collecton=True)
+    # ablation studies
+    cfg = ablation_studies_modifications(cfg, args_cli)
 
     # limit number of samples
     cfg.trainer_cfg.num_samples = 50000
@@ -89,12 +87,6 @@ def load_cfg():
     # set name of the run
     if args_cli.runs is not None:
         cfg.trainer_cfg.load_run = args_cli.runs[0] if isinstance(args_cli.runs, list) else args_cli.runs
-
-    # set regular spawning pattern
-    if args_cli.regular:
-        cfg.env_cfg.events.reset_base.func = mdp.reset_root_state_regular
-        cfg.env_cfg.events.reset_base.params.pop("pose_range")
-        cfg.env_cfg.events.reset_base.params.pop("velocity_range")
 
     return cfg
 
@@ -171,7 +163,7 @@ def run_eval(runner: fdm_runner_cfg.FDMRunner, args_cli: argparse.Namespace):
         combined_suffix += "_noTorque"
     if args_cli.noise:
         combined_suffix += "_noise"
-    elif args_cli.occlusion:
+    elif args_cli.occlusions:
         combined_suffix += "_occlusions"
     for i, dataset in enumerate(datasets):
         if args_cli.height_threshold is not None and "stairs" in dataset.lower():
@@ -182,7 +174,7 @@ def run_eval(runner: fdm_runner_cfg.FDMRunner, args_cli: argparse.Namespace):
     # # create violin plot
     vilion_plotter = ViolinPlotter(
         datasets=datasets,
-        models=["Ours", "Kim et al.", "Constant Vel."],
+        models=["Ours", "Kim et al.", "Constant Vel."] if args_cli.ablation_mode is None else ["Ours", "Constant Vel."],
         env_sensor_cfg=runner.env.cfg.scene.env_sensor,
         correct_collision_estimation_split=True,
         collision_split=True,
@@ -210,58 +202,68 @@ def run_eval(runner: fdm_runner_cfg.FDMRunner, args_cli: argparse.Namespace):
     # save fdm batch size
     fdm_batch_size = runner.trainer.cfg.batch_size
 
-    # close prev environment
-    runner.close()
-    # create a new stage
-    omni.usd.get_context().new_stage()
-    # del runner
-    del runner
+    ###
+    # Create baseline model data
+    ###
 
-    # include baseline in the tests --> load baseline method and rerun the evaluation
-    args_cli.env = "baseline"
-    args_cli.runs = None
-    cfg = load_cfg()
-    # avoid resampling the environment if generator is selected
-    if args_cli.only_test_envs:
-        cfg.env_cfg.scene.terrain.terrain_type = "usd"
-    if args_cli.noise:
-        cfg.trainer_cfg.load_run = "Jan09_23-18-02_Baseline_NewEnv_NewCollisionShape_noise"
-    else:
-        cfg.trainer_cfg.load_run = "Jan13_15-36-24_Baseline_NewEnv_NewCollisionShape_CorrLidar"
-        # cfg.trainer_cfg.load_run = "Jan13_15-39-48_Baseline_NewEnv_NewCollisionShape_CorrLidar_Plane"
-    cfg.trainer_cfg.batch_size = fdm_batch_size
-    runner = fdm_runner_cfg.FDMRunner(cfg=cfg, args_cli=args_cli, eval=True)
-    baseline_meta_eval, baseline_test_meta = runner.eval_metric()
-    baseline_meta_eval_new = {}
-    for key, value in baseline_meta_eval.items():
-        new_key = key.replace("plot", "plot baseline", 1)
-        baseline_meta_eval_new[new_key] = value
-    for key, value in baseline_test_meta.items():
-        new_key = key.replace("_baseline", " baseline", 1)
-        baseline_meta_eval_new[new_key] = value
+    if args_cli.ablation_mode is None:
+        # close prev environment
+        runner.close()
+        # create a new stage
+        omni.usd.get_context().new_stage()
+        # del runner
+        del runner
 
-    # create violin plot
-    if not args_cli.only_test_envs:
-        vilion_plotter.update_data(
-            runner.model,
-            runner.trainer.dataloader,
-            "train",
-            model_name="Kim et al.",
-            baseline=True,
-            save_path=os.path.join(dir_path, "plots"),
-        )
-    if runner.trainer.test_datasets is not None:
-        for test_dataset_name, test_dataset in runner.trainer.test_datasets.items():
+        # include baseline in the tests --> load baseline method and rerun the evaluation
+        args_cli.env = "baseline"
+        args_cli.runs = None
+        cfg = load_cfg()
+        # avoid resampling the environment if generator is selected
+        if args_cli.only_test_envs:
+            cfg.env_cfg.scene.terrain.terrain_type = "usd"
+        if args_cli.noise:
+            cfg.trainer_cfg.load_run = "Jan09_23-18-02_Baseline_NewEnv_NewCollisionShape_noise"
+        else:
+            cfg.trainer_cfg.load_run = "Jan13_15-36-24_Baseline_NewEnv_NewCollisionShape_CorrLidar"
+            # cfg.trainer_cfg.load_run = "Jan13_15-39-48_Baseline_NewEnv_NewCollisionShape_CorrLidar_Plane"
+        cfg.trainer_cfg.batch_size = fdm_batch_size
+        runner = fdm_runner_cfg.FDMRunner(cfg=cfg, args_cli=args_cli, eval=True)
+        baseline_meta_eval, baseline_test_meta = runner.eval_metric()
+        baseline_meta_eval_new = {}
+        for key, value in baseline_meta_eval.items():
+            new_key = key.replace("plot", "plot baseline", 1)
+            baseline_meta_eval_new[new_key] = value
+        for key, value in baseline_test_meta.items():
+            new_key = key.replace("_baseline", " baseline", 1)
+            baseline_meta_eval_new[new_key] = value
+
+        # create violin plot
+        if not args_cli.only_test_envs:
             vilion_plotter.update_data(
                 runner.model,
-                test_dataset,
-                test_dataset_name.removesuffix(f"_heightThreshold{args_cli.height_threshold}")
-                .removesuffix("_baseline")
-                .removesuffix("_EVAL_CFG"),
+                runner.trainer.dataloader,
+                "train",
                 model_name="Kim et al.",
                 baseline=True,
                 save_path=os.path.join(dir_path, "plots"),
             )
+        if runner.trainer.test_datasets is not None:
+            for test_dataset_name, test_dataset in runner.trainer.test_datasets.items():
+                vilion_plotter.update_data(
+                    runner.model,
+                    test_dataset,
+                    test_dataset_name.removesuffix(f"_heightThreshold{args_cli.height_threshold}")
+                    .removesuffix("_baseline")
+                    .removesuffix("_EVAL_CFG"),
+                    model_name="Kim et al.",
+                    baseline=True,
+                    save_path=os.path.join(dir_path, "plots"),
+                )
+
+    ###
+    # Create output data
+    ###
+
     # create the vilion plot
     vilion_plotter.plot_data(
         os.path.join(dir_path, "plots"),
@@ -308,6 +310,11 @@ def run_eval(runner: fdm_runner_cfg.FDMRunner, args_cli: argparse.Namespace):
     plot_metrics_with_grid(distance_meta_summary, os.path.join(dir_path, "plots"))
     plot_metrics_with_grid(step_meta_summary, os.path.join(dir_path, "plots"), step=True, only_first_row=True)
     plot_metrics_with_grid(distance_meta_summary, os.path.join(dir_path, "plots"), only_first_row=True)
+
+    # if ablation mode is not None, we do not need to plot the baseline
+    if args_cli.ablation_mode is not None:
+        print("Done evaluated the model")
+        return
 
     # -- plot with baseline
     distance_meta_summary, step_meta_summary = meta_summarize(meta_eval | test_meta | baseline_meta_eval_new)

@@ -31,7 +31,7 @@ class FDMBaselineCfg(BaseModelCfg):
         "shape": [256, 256, 128, 128],
         "activation": "leakyrelu",
         "dropout": 0.2,
-        "batchnorm": False,  # True,  #
+        "batchnorm": True,
     }
     """State encoder configuration."""
     command_encoder: dict = {
@@ -40,7 +40,7 @@ class FDMBaselineCfg(BaseModelCfg):
         "shape": [32],
         "activation": "leakyrelu",
         "dropout": 0.2,
-        "batchnorm": False,  # True,  #
+        "batchnorm": True,
     }
     """Command encoder configuration."""
     recurrence: dict = {
@@ -55,7 +55,7 @@ class FDMBaselineCfg(BaseModelCfg):
         "shape": [64, 32, 16],
         "activation": "leakyrelu",
         "dropout": 0.2,
-        "batchnorm": False,  # True,  #
+        "batchnorm": True,
         "collision": {"output": 1},
         "coordinate": {"output": 2},
     }
@@ -84,6 +84,8 @@ class FDMBaselineCfg(BaseModelCfg):
 
     The states are recorded at a frequency of ``command_timestep / history_length``.
     """
+    history_time_step: float | None = None
+    """Time step of the history. If None, the time step is ``command_timestep / history_length``."""
     collision_threshold: float = 0.5
     """Collision threshold for the collision prediction. Default is 0.5."""
 

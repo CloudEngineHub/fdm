@@ -41,7 +41,6 @@ simulation_app = app_launcher.app
 import os
 import pickle
 import torch
-from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
 import omni
@@ -100,7 +99,7 @@ def main():
     if hasattr(cfg.env_cfg.observations, "planner_obs"):
         cfg.env_cfg.observations.planner_obs.goal.func = mdp.goal_command_w_se2
         cfg.env_cfg.observations.planner_obs.goal.params = {"command_name": "command"}
-    cfg.env_cfg.curriculum = MISSING
+    cfg.env_cfg.curriculum = None
 
     # height threshold
     if args_cli.height_threshold is not None:

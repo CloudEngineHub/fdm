@@ -22,6 +22,10 @@ from fdm.env_cfg.env_cfg_height import OccludedObsExteroceptiveCfg
 from fdm.env_cfg.env_cfg_heuristic_planner import HeuristicsOccludedObsExteroceptiveCfg
 from fdm.mdp.noise import MissingPatchNoiseCfg, PerlinNoiseCfg
 
+"""
+Configuration initialization.
+"""
+
 
 def runner_cfg_init(args_cli) -> fdm_runner.FDMRunnerCfg:
     # setup runner
@@ -29,19 +33,33 @@ def runner_cfg_init(args_cli) -> fdm_runner.FDMRunnerCfg:
         cfg = fdm_runner.RunnerBaselineCfg()
     elif args_cli.env == "depth":
         cfg = fdm_runner.RunnerDepthCfg()
-        # cfg = fdm_runner.RunnerDepthFlatCfg()
-        # cfg = fdm_runner.RunnerPreTrainedDepthCfg()
     elif args_cli.env == "height":
-        # cfg = fdm_runner.RunnerHeightCfg()
         cfg = fdm_runner.RunnerMixedHeightCfg()
-        # cfg = fdm_runner.RunnerAllPreTrainedHeightCfg()
-        # cfg = fdm_runner.RunnerAllPreTrainedMixedHeightCfg()
-        # cfg = fdm_runner.RunnerAllPreTrainedHeightSingleStepCfg()
-        # cfg = fdm_runner.RunnerAllPreTrainedHeightSingleStepHeightAdjustCfg()
     else:
         raise ValueError(f"Unknown environment {args_cli.env}")
 
     return cfg
+
+
+def planner_cfg_init(args_cli) -> fdm_planner.FDMPlannerCfg:
+    # setup runner
+    if args_cli.env == "depth":
+        cfg = fdm_planner.PlannerDepthCfg()
+    elif args_cli.env == "height":
+        cfg = fdm_planner.PlannerHeightCfg()
+    elif args_cli.env == "baseline":
+        cfg = fdm_planner.PlannerBaselineCfg()
+    elif args_cli.env == "heuristic":
+        cfg = fdm_planner.PlannerHeuristicCfg()
+    else:
+        raise ValueError(f"Unknown/ Not yet supported environment {args_cli.env}")
+
+    return cfg
+
+
+"""
+Changes to the configuration based on the robot and args_cli parameters.
+"""
 
 
 def robot_changes(
@@ -62,7 +80,7 @@ def robot_changes(
         if isinstance(cfg, fdm_runner.FDMRunnerCfg):
             cfg.trainer_cfg.encoder_resume = None
 
-        # FIXME: remove when test datasets are available
+        # NOTE: remove when test datasets are available
         cfg.trainer_cfg.test_datasets = None
 
     # Tytan quiet
@@ -79,7 +97,7 @@ def robot_changes(
         if isinstance(cfg, fdm_runner.FDMRunnerCfg):
             cfg.trainer_cfg.encoder_resume = None
 
-        # FIXME: remove when test datasets are available
+        # NOTE: remove when test datasets are available
         cfg.trainer_cfg.test_datasets = None
 
     # Anymal on wheels (AOW)
@@ -97,7 +115,7 @@ def robot_changes(
         if isinstance(cfg, fdm_runner.FDMRunnerCfg):
             cfg.trainer_cfg.encoder_resume = None
 
-        # FIXME: remove when test datasets are available
+        # NOTE: remove when test datasets are available
         cfg.trainer_cfg.test_datasets = None
 
     # ANYmal with perceptive walking policy
@@ -250,7 +268,7 @@ def cfg_modifier_pre_init(  # noqa: C901
                 f"{dataset[:-4]}_baseline.pkl" for dataset in cfg.trainer_cfg.test_datasets
             ]
 
-        # FIXME: remove that once the test datasets are available
+        # NOTE: remove that once the test datasets are available
         if LARGE_UNIFIED_HEIGHT_SCAN:
             raise ValueError("Test datasets are not available for the large unified height scan")
             cfg.trainer_cfg.test_datasets = [
@@ -349,21 +367,25 @@ def env_modifier_post_init(entity: fdm_runner.FDMRunner | fdm_planner.FDMPlanner
     return entity
 
 
-def planner_cfg_init(args_cli) -> fdm_planner.FDMPlannerCfg:
-    # setup runner
-    if args_cli.env == "depth":
-        cfg = fdm_planner.PlannerDepthCfg()
-    elif args_cli.env == "height":
-        cfg = fdm_planner.PlannerHeightCfg()
-        # cfg = fdm_planner.PlannerHeightSingleStepCfg()
-        # cfg = fdm_planner.PlannerHeightSingleStepHeightAdjustCfg()
-    elif args_cli.env == "baseline":
-        cfg = fdm_planner.PlannerBaselineCfg()
-    elif args_cli.env == "heuristic":
-        cfg = fdm_planner.PlannerHeuristicCfg()
-    elif args_cli.env == "rmp":  # noqa: R506
-        raise NotImplementedError("RMP planner is not yet supported")
-    else:
-        raise ValueError(f"Unknown/ Not yet supported environment {args_cli.env}")
+"""
+Config modification for ablation studies.
+"""
+
+
+def ablation_studies_modifications(cfg: fdm_runner.FDMRunnerCfg, args_cli):
+    """
+    Modify the configuration after base changes applied by the method `cfg_modifier_pre_init`.
+
+    Args:
+        cfg: The configuration object.
+        args_cli: The command line arguments.
+    """
+    if isinstance(cfg, fdm_runner.FDMRunnerCfg):
+        if args_cli.ablation_mode == "no_state_obs":
+            cfg.trainer_cfg.ablation_no_state_obs = True
+        elif args_cli.ablation_mode == "no_proprio_obs":
+            cfg.trainer_cfg.ablation_no_proprio_obs = True
+        elif args_cli.ablation_mode == "no_height_scan":
+            cfg.trainer_cfg.ablation_no_height_scan = True
 
     return cfg

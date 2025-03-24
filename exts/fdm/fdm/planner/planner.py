@@ -292,6 +292,14 @@ class FDMPlanner:
                 obs["planner_obs"]["proprio_obs"] = self._proprio_obs_history.clone()
                 obs["planner_obs"]["extero_obs"] = obs["fdm_obs_exteroceptive"].clone()
 
+                # ablation studies
+                if self.args_cli.ablation_mode == "no_height_scan":
+                    obs["planner_obs"]["extero_obs"] *= 0.0
+                elif self.args_cli.ablation_mode == "no_state_obs":
+                    obs["planner_obs"]["states"] *= 0.0
+                elif self.args_cli.ablation_mode == "no_proprio_obs":
+                    obs["planner_obs"]["proprio_obs"] *= 0.0
+
                 se2_positions_w_pred, se2_velocity_b[replan_envs] = self.planner.plan(
                     obs=obs["planner_obs"], env_ids=replan_envs
                 )
@@ -533,6 +541,14 @@ class FDMPlanner:
                 obs["planner_obs"]["states"] = self._state_history.clone()
                 obs["planner_obs"]["proprio_obs"] = self._proprio_obs_history.clone()
                 obs["planner_obs"]["extero_obs"] = obs["fdm_obs_exteroceptive"].clone()
+
+                # ablation studies
+                if self.args_cli.ablation_mode == "no_height_scan":
+                    obs["planner_obs"]["extero_obs"] *= 0.0
+                elif self.args_cli.ablation_mode == "no_state_obs":
+                    obs["planner_obs"]["states"] *= 0.0
+                elif self.args_cli.ablation_mode == "no_proprio_obs":
+                    obs["planner_obs"]["proprio_obs"] *= 0.0
 
                 se2_positions_w_pred, se2_velocity_b[replan_envs] = self.planner.plan(
                     obs=obs["planner_obs"], env_ids=replan_envs

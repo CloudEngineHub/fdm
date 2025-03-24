@@ -241,7 +241,10 @@ class ReplayBuffer:
         if self._data_collection_interval % 1 != 0:
             print("[WARNING]: Data collection interval is not an integer. Can influence data collection.")
         # define after how many steps (decimation x physics_dt) the state/ proprioceptive obs should be written in the buffer
-        self._history_collection_interval = self._data_collection_interval / self.model_cfg.history_length
+        if self.model_cfg.history_time_step is not None:
+            self._history_collection_interval = self.model_cfg.history_time_step / self.env.step_dt
+        else:
+            self._history_collection_interval = self._data_collection_interval / self.model_cfg.history_length
         assert self._history_collection_interval >= 1, (
             "History collection frequency calculated as must be larger than "
             "physics frequency! Decrease history length as collection timestep is calculated by division of the "

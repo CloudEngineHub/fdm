@@ -78,7 +78,7 @@ class TrajectoryDataset(Dataset):
     # Operations
     ##
 
-    def populate(
+    def populate(  # noqa: C901
         self, replay_buffer: ReplayBuffer, regular_slicing: bool = False, start_idx: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
@@ -482,6 +482,17 @@ class TrajectoryDataset(Dataset):
             raise ValueError("Nan/ Inf values in perfect velocity following!")
 
         ###
+        # Ablation studies
+        ###
+
+        if self.cfg.ablation_no_state_obs:
+            self.state_history *= 0.0
+        elif self.cfg.ablation_no_proprio_obs:
+            self.obs_proprioceptive *= 0.0
+        elif self.cfg.ablation_no_height_scan and self.obs_exteroceptive is not None:
+            self.obs_exteroceptive *= 0.0
+
+        ###
         # Print meta information
         ###
 
@@ -551,6 +562,11 @@ class TrajectoryDataset(Dataset):
         # Print action variance
         table.add_row(("Action Mean", [f"{v:.4f}" for v in action_mean.cpu().tolist()]))
         table.add_row(("Action Variance", [f"{v:.4f}" for v in action_var.cpu().tolist()]))
+
+        # add info about ablation studies
+        table.add_row(("Ablation no state obs", self.cfg.ablation_no_state_obs))
+        table.add_row(("Ablation no proprio obs", self.cfg.ablation_no_proprio_obs))
+        table.add_row(("Ablation no height scan", self.cfg.ablation_no_height_scan))
 
         # Print table
         print(f"[INFO] Dataset Metrics {self.states.shape[0]} samples\n", table)

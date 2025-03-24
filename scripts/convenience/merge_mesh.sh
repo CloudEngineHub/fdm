@@ -15,7 +15,7 @@ ${ISAACLAB_HOME}/isaaclab.sh -p fdm/isaac-nav-suite/scripts/tools/mesh_merger.py
     "/home/pascal/nav_projects/memory_iplanner/terrain_generator_new/results/generated_terrain_all_wall_emptier/mesh_9/mesh.obj" \
     "/home/pascal/nav_projects/memory_iplanner/terrain_generator_new/results/generated_terrain_all_wall_emptier/mesh_10/mesh.obj" \
     "/home/pascal/nav_projects/memory_iplanner/terrain_generator_new/results/generated_terrain_all_wall_emptier/mesh_11/mesh.obj" \
-    --generator_list "PLANNER_TRAIN_CFG" "FDM_EXTEROCEPTIVE_TERRAINS_CFG" "MAZE_MERGE_TERRAIN_CFG" "BASELINE_FLAT_TERRAIN_CFG"
+    --generator_list "PLANNER_TRAIN_CFG" "FDM_EXTEROCEPTIVE_TERRAINS_CFG" "MAZE_MERGE_TERRAIN_CFG" # "BASELINE_FLAT_TERRAIN_CFG"
 
 
 # all terrains

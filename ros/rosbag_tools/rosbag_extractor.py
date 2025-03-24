@@ -270,7 +270,7 @@ def main(args):  # noqa: C901
             buffers[topic][counters[topic]] = np.array([
                 msg.joints.position  # joint position
                 + msg.joints.velocity  # joint velocity
-                + msg.joints.effort  # joint torque     --> FIXME: IS THAT THE JOINT TORQUE ????
+                + msg.joints.effort  # joint torque
                 + (
                     msg.twist.twist.linear.x,
                     msg.twist.twist.linear.y,

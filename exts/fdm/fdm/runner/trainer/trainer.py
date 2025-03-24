@@ -124,7 +124,12 @@ class Trainer:
             # init learning rate scheduler and early stopping module
             if self.cfg.lr_scheduler:
                 self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                    self.optimizer, mode="min", factor=0.5, patience=10, verbose=True, min_lr=1e-6
+                    self.optimizer,
+                    mode="min",
+                    factor=0.5,
+                    patience=self.cfg.lr_scheduler_patience,
+                    verbose=True,
+                    min_lr=1e-6,
                 )
             if self.cfg.early_stopping:
                 self.early_stopping = EarlyStopping(patience=3)

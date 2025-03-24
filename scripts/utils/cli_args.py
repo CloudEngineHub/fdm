@@ -21,7 +21,7 @@ def add_fdm_args(parser: argparse.ArgumentParser, default_num_envs: int = 2048):
         "--env",
         type=str,
         default="height",
-        choices=["baseline", "depth", "height", "reduced", "heuristic", "rmp"],
+        choices=["baseline", "depth", "height", "heuristic"],
         help="Name of the environment to load.",
     )
     parser.add_argument(
@@ -36,6 +36,13 @@ def add_fdm_args(parser: argparse.ArgumentParser, default_num_envs: int = 2048):
     parser.add_argument("--reduced_obs", action="store_true", default=False, help="Use a reduced set of observations.")
     parser.add_argument(
         "--remove_torque", action="store_true", default=False, help="Remove the joint torque from the observations."
+    )
+    parser.add_argument(
+        "--ablation_mode",
+        type=str,
+        default=None,
+        choices=["no_state_obs", "no_proprio_obs", "no_height_scan"],
+        help="Ablation mode to use.",
     )
     parser.add_argument("--timestamp", type=float, default=None, help="Command timestep of the model.")
     parser.add_argument("--friction", action="store_true", default=False, help="Vary friction for each robot.")

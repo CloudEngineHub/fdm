@@ -247,6 +247,8 @@ class FDMRunner:
                     suffix = "_baseline"
             if LARGE_UNIFIED_HEIGHT_SCAN:
                 suffix += "_largeHeightScan"
+            if hasattr(self.args_cli, "ablation_mode") and self.args_cli.ablation_mode is not None:
+                suffix += f"_ablation_{self.args_cli.ablation_mode}"
 
             eval_dataset_path = os.path.join(log_dir, "test_datasets", f"{terrain_name}{suffix}_dataset.pkl")
 
@@ -850,7 +852,7 @@ class FDMRunner:
                     carb.log_warn("Environments should not be done after reset.")
             # if curriuclum activated, update counter got increased by number of all environments due to reset
             # balance the counter which will set the updated flag to False
-            if not isinstance(self.cfg.env_cfg.curriculum, type(MISSING)):
+            if self.cfg.env_cfg.curriculum is not None:
                 self.env.curriculum_manager._term_cfgs[0].func.env_reset_counter = 0
                 if self.env.curriculum_manager._term_cfgs[0].func.cfg.update_interval < self.env.num_envs:
                     print(
@@ -906,7 +908,7 @@ class FDMRunner:
             # apply curriculum to action generation if enabled (only during training data collection)
             if (
                 not eval
-                and not isinstance(self.cfg.env_cfg.curriculum, type(MISSING))
+                and self.cfg.env_cfg.curriculum is not None
                 and self.env.curriculum_manager._term_cfgs[0].func.updated
             ):
                 with torch.inference_mode():
@@ -1004,7 +1006,7 @@ class FDMRunner:
             self.trainer.evaluate()
 
             # reset the curriculum term to not update the ratios
-            if not isinstance(self.cfg.env_cfg.curriculum, type(MISSING)):
+            if self.cfg.env_cfg.curriculum is not None:
                 with torch.inference_mode():
                     self.env.curriculum_manager._term_cfgs[0].func.reset(self.env)
 
@@ -1194,7 +1196,10 @@ class FDMRunner:
         counter: int,
     ) -> tuple[dict[int, list[torch.Tensor]], dict[int, list[torch.Tensor]], dict[str, list[float]], int]:
         # extract the output quantities of the model
-        future_states, collision_pred, energy_pred = model_out
+        if self.args_cli.env == "baseline":
+            future_states, collision_pred = model_out
+        else:
+            future_states, collision_pred, energy_pred = model_out
         # loss for world frame coordinates
         for env_idx in env_new_prediction:
             # get previous predictions
@@ -1210,8 +1215,6 @@ class FDMRunner:
                 prev_coll = prev_coll[-self.cfg.model_cfg.prediction_horizon][-self.cfg.model_cfg.prediction_horizon :]
 
             # get loss values
-            # FIXME: quick fix for energy trajectory
-            model_out = [prev_pred.unsqueeze(0), prev_coll.unsqueeze(0), torch.zeros_like(prev_coll).unsqueeze(0)]
             future_states_yaw = math_utils.euler_xyz_from_quat(
                 self.replay_buffer.states[
                     env_idx,
@@ -1248,6 +1251,11 @@ class FDMRunner:
             )
 
             # compute loss
+            if self.args_cli.env == "baseline":
+                model_out = [prev_pred.unsqueeze(0)[..., :2], prev_coll.unsqueeze(0)]
+            else:
+                # FIXME: quick fix for energy trajectory
+                model_out = [prev_pred.unsqueeze(0), prev_coll.unsqueeze(0), torch.zeros_like(prev_coll).unsqueeze(0)]
             _, meta = self.model.loss(model_out, target, mode="eval")
             if len(meta_eval) == 0:
                 for key, value in meta.items():

@@ -32,9 +32,9 @@ class BaselineTerrainSceneCfg(TerrainSceneCfg):
         prim_path="{ENV_REGEX_NS}/Robot/base",
         offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),  # TODO: get the correct offset
         pattern_cfg=patterns.Lidar2DPatternCfg(horizontal_res=1),
-        debug_vis=True,
+        debug_vis=False,
         mesh_prim_paths=["/World/ground"],
-        max_distance=4.0,
+        max_distance=10.0,
         attach_yaw_only=False,
     )
 

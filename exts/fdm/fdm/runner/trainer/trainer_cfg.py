@@ -20,11 +20,13 @@ class TrainerBaseCfg:
     """Whether to use early stopping."""
     lr_scheduler: bool = True
     """Whether to use a learning rate scheduler."""
-    learning_rate_warmup: int = 7  # 2
+    lr_scheduler_patience: int = 5  # Dec03 Model: 10;  Nov19 Model: 5
+    """Patience for the learning rate scheduler."""
+    learning_rate_warmup: int = 2  # Dec03 Model: 7;  Nov19 Model: 2
     """Number of collection rounds for learning rate warmup. Scheduling will be applied after warmup."""
 
     # data collection and dataloader
-    num_samples: int = 100000  # e.g. 50000 with 4096 envs, approx. 12 samples per env
+    num_samples: int = 80000  # Dec03 Model: 100000;  Nov19 Model: 80000
     """Number of trajectories to collect per collection round."""
     num_workers: int = 4
     """Number of workers for the dataloader."""
@@ -68,7 +70,7 @@ class TrainerBaseCfg:
     """Noise model for the exteroceptive observations."""
 
     # weight decay and learning rate
-    weight_decay: float = 5e-5  # 1e-4
+    weight_decay: float = 1e-4  # Dec03 Model: 5e-5;  Nov19 Model: 1e-4
     """Weight decay for the optimizer."""
     learning_rate: float = 3e-3
     """Learning rate for the optimizer."""
@@ -112,3 +114,11 @@ class TrainerBaseCfg:
     .. note::
         The noise terms are defined in the environment configuration and passed to the trainer.
     """
+
+    # ablation studies
+    ablation_no_state_obs: bool = False
+    """Whether to remove the state observations."""
+    ablation_no_proprio_obs: bool = False
+    """Whether to remove the proprioceptive observations."""
+    ablation_no_height_scan: bool = False
+    """Whether to remove the height scan."""

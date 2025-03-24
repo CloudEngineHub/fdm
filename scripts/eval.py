@@ -21,7 +21,6 @@ import utils.cli_args as cli_args  # isort: skip
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
 parser.add_argument("--terrain-cfg", type=str, default=None, help="Name of the terrain config to load.")
-parser.add_argument("--regular", action="store_true", default=False, help="Spawn robots in a regular pattern.")
 parser.add_argument(
     "--runs",
     type=str,
@@ -30,6 +29,7 @@ parser.add_argument(
     help="Name of the run.",
 )
 parser.add_argument("--equal-actions", action="store_true", default=False, help="Have the same actions for all envs.")
+parser.add_argument("--terrain_analysis_points", type=int, default=2000, help="Number of points for terrain analysis.")
 
 # append common FDM cli arguments
 cli_args.add_fdm_args(parser, default_num_envs=50)
@@ -47,7 +47,6 @@ simulation_app = app_launcher.app
 import torch
 
 import fdm.env_cfg as env_cfg
-import fdm.mdp as mdp
 from fdm.runner import FDMRunner
 from fdm.utils.args_cli_utils import cfg_modifier_pre_init, env_modifier_post_init, robot_changes, runner_cfg_init
 
@@ -89,12 +88,6 @@ def main():
     # set name of the run
     if args_cli.runs is not None:
         cfg.trainer_cfg.load_run = args_cli.runs[0] if isinstance(args_cli.runs, list) else args_cli.runs
-
-    # set regular spawning pattern
-    if args_cli.regular:
-        cfg.env_cfg.events.reset_base.func = mdp.reset_root_state_regular
-        cfg.env_cfg.events.reset_base.params.pop("pose_range")
-        cfg.env_cfg.events.reset_base.params.pop("velocity_range")
 
     # setup runner
     runner = FDMRunner(cfg=cfg, args_cli=args_cli, eval=True)

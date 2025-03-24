@@ -162,7 +162,7 @@ class FDMBaseline(FDMModel):
 
         encoded_prediction, (_, _) = self.recurrence(encoded_command, (initial_hidden_state, initial_cell_state))
         traj_len, n_sample, encoded_prediction_dim = encoded_prediction.shape
-        encoded_prediction = encoded_prediction.reshape(-1, encoded_prediction_dim)
+        encoded_prediction = encoded_prediction.view(-1, encoded_prediction_dim)
         collision_prob_traj = self.sigmoid(self.Pcol_prediction.architecture(encoded_prediction))
         collision_prob_traj = collision_prob_traj.view(
             traj_len, n_sample, self.cfg.traj_predictor["collision"]["output"]
@@ -190,66 +190,6 @@ class FDMBaseline(FDMModel):
         collision_prob_traj = collision_prob_traj.permute(1, 0, 2)
 
         return coordinate_traj, collision_prob_traj.squeeze(-1)
-
-        # BS, TRAJ_LEN = state.shape[:2]
-
-        # # Baseline does not use a sin/cos encoding for the orientation, revert it here
-        # state[..., 2] = torch.atan2(state[..., 2], state[..., 3])
-
-        # # construct the same input space as used in the baseline (orientation in base frame, lin vel, ang vel, lidar scan)
-        # # should have an overall dim of 450 (9 * history of 10 + 360 lidar)
-        # state_obs_proprioceptive = torch.concatenate((state[..., :3], obs_proprioceptive), dim=-1)
-        # state_lidar = torch.concatenate(
-        #     (state_obs_proprioceptive.reshape(BS, -1), lidar_scan), dim=-1
-        # )
-
-        # # switch the commands to traj_len x batch_size x command_dim
-        # command_traj = command_traj.permute(1, 0, 2).contiguous()
-
-        # if self.cfg.cvae_retrain:
-        #     encoded_state = self.state_encoder.architecture(state_lidar).detach()
-        # else:
-        #     encoded_state = self.state_encoder.architecture(state_lidar)
-        # initial_cell_state = torch.broadcast_to(
-        #     encoded_state, (self.cfg.recurrence["layer"], *encoded_state.shape)
-        # ).contiguous()
-        # initial_hidden_state = torch.zeros_like(initial_cell_state).to(self.device)
-
-        # traj_len, n_sample, single_command_dim = command_traj.shape
-        # command_traj = command_traj.reshape(-1, single_command_dim)
-        # if self.cfg.cvae_retrain:
-        #     encoded_command = self.command_encoder.architecture(command_traj).reshape(traj_len, n_sample, -1).detach()
-        # else:
-        #     encoded_command = self.command_encoder.architecture(command_traj).reshape(traj_len, n_sample, -1)
-
-        # encoded_prediction, (_, _) = self.recurrence(encoded_command, (initial_hidden_state, initial_cell_state))
-        # traj_len, n_sample, encoded_prediction_dim = encoded_prediction.shape
-        # encoded_prediction = encoded_prediction.reshape(-1, encoded_prediction_dim)
-        # collision_prob_traj = self.sigmoid(self.Pcol_prediction.architecture(encoded_prediction))
-        # collision_prob_traj = collision_prob_traj.reshape(
-        #     traj_len, n_sample, self.cfg.traj_predictor["collision"]["output"]
-        # )
-
-        # # coordinate_traj = self.coordinate_prediction.architecture(encoded_prediction)
-        # # coordinate_traj = coordinate_traj.view(traj_len, n_sample, self.cfg.traj_predictor["coordinate"]["output"])
-
-        # delta_coordinate_traj = self.coordinate_prediction.architecture(encoded_prediction)
-        # delta_coordinate_traj = delta_coordinate_traj.reshape(
-        #     traj_len, n_sample, self.cfg.traj_predictor["coordinate"]["output"]
-        # )
-
-        # coordinate_traj = torch.zeros(traj_len, n_sample, self.cfg.traj_predictor["coordinate"]["output"]).to(
-        #     self.device
-        # ).contiguous()
-        # for i in range(traj_len):
-        #     if i == 0:
-        #         coordinate_traj[i, :, :] = delta_coordinate_traj[i, :, :]
-        #     else:
-        #         coordinate_traj[i, :, :] = coordinate_traj[i - 1, :, :] + delta_coordinate_traj[i, :, :]
-
-        # # switch back to batch_size x traj_len x command_dim
-        # coordinate_traj = coordinate_traj.permute(1, 0, 2).contiguous()
-        # collision_prob_traj = collision_prob_traj.permute(1, 0, 2).contiguous()
 
     def loss(
         self,
