@@ -88,7 +88,7 @@ class FDMPlanner:
         # resume model and set into eval mode
         self.log_root_path = os.path.join("logs", "fdm", self.cfg.experiment_name)
         self.log_root_path = os.path.abspath(self.log_root_path)
-        resume_path = get_checkpoint_path(self.log_root_path, self.cfg.load_run, "model_collection_round_01.pth")
+        resume_path = get_checkpoint_path(self.log_root_path, self.cfg.load_run, self.cfg.load_checkpoint)
         self.model.load(resume_path)
         self.model.eval()
         print(f"[INFO]: Loaded model checkpoint from: {resume_path}")

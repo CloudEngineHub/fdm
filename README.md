@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  Perceptive Forward Dynamics Model
+  Learned Perceptive Forward Dynamics Model for Safe and Platform-aware Robotic Navigation
   <br>
 </h1>
 
@@ -10,10 +10,10 @@
 
 </p>
 <p align="center">
-  <a href="https://leggedrobotics.github.io/forward_dynamics_model.github.io/">Project Page</a> •
+  <a href="https://leggedrobotics.github.io/fdm.github.io/">Project Page</a> •
   <a href="TODO">arXiv</a> •
   <a href="TODO">Video</a> •
-  <a href="#citing-fdm">BibTeX</a>
+  <a href="#citation">BibTeX</a>
 </p>
 
 <p align="center">
@@ -47,14 +47,21 @@ Ensuring safe navigation in complex environments requires accurate real-time tra
 
 ### Citation
 ```
-TODO
+@inproceedings{roth2025fdm,
+  title={Learned Perceptive Forward Dynamics Model for Safe and Platform-aware Robotic Navigation},
+  author={Roth, Pascal and Frey, Jonas and Cadena, Cesar and Hutter, Marco},
+  booktitle={Robotics: Science and Systems (RSS 2025)},
+  year={2025}
+}
 ```
 
 ## Installation
 
 ### IsaacLab Extension (Training and Evaluation)
 
-The extension is developed with [IsaacLab version 2.0.1](https://github.com/isaac-sim/IsaacLab/tree/v2.0.1) (latest tested commit f1a4975eb7bae8509082a8ff02fd775810a73531). Future versions may work, but are not tested. IsaacLab runs on Ubuntu 20.04 - 24.04.
+The extension is developed with [IsaacLab version 2.1.0](https://github.com/isaac-sim/IsaacLab/tree/v2.1.0) (latest tested commit 2e6946afb9b26f6949d4b1fd0a00e9f4ef733fcc). Future versions may work, but are not tested. IsaacLab runs on Ubuntu 20.04 - 24.04.
+
+NOTE: Please use an IsaacLab version where [PR2393](https://github.com/isaac-sim/IsaacLab/pull/2393) and [PR2394](https://github.com/isaac-sim/IsaacLab/pull/2394) have been merged, they contain changes necessary to run the scripts successfully.
 
 For details on the IsaacLab extensions, see the [README](exts/fdm/docs/README.md)
 

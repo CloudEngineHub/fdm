@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import torch
 
+import omni.log
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 import fdm.env_cfg.robot_cfg as env_robot_cfg
@@ -15,7 +16,7 @@ import fdm.mdp as mdp
 import fdm.model.robot_cfg as model_robot_cfg
 import fdm.planner as fdm_planner
 import fdm.runner as fdm_runner
-from fdm import LARGE_UNIFIED_HEIGHT_SCAN, TOTAL_TIME_PREDICTION_HORIZON
+from fdm import LARGE_UNIFIED_HEIGHT_SCAN, PLANNER_MODE, PLANNER_MODE_BASELINE, TOTAL_TIME_PREDICTION_HORIZON
 from fdm.env_cfg.env_cfg_base import TERRAIN_ANALYSIS_CFG
 from fdm.env_cfg.env_cfg_depth import CAMERA_SIM_RESOLUTION_DECREASE_FACTOR
 from fdm.env_cfg.env_cfg_height import OccludedObsExteroceptiveCfg
@@ -28,6 +29,12 @@ Configuration initialization.
 
 
 def runner_cfg_init(args_cli) -> fdm_runner.FDMRunnerCfg:
+    # check if any planner mode is enabled
+    if PLANNER_MODE or PLANNER_MODE_BASELINE:
+        omni.log.warn(
+            "PLANNER_MODE or PLANNER_MODE_BASELINE is enabled in fdm.__init__.py, please disable it for training!"
+        )
+
     # setup runner
     if args_cli.env == "baseline":
         cfg = fdm_runner.RunnerBaselineCfg()
@@ -42,6 +49,18 @@ def runner_cfg_init(args_cli) -> fdm_runner.FDMRunnerCfg:
 
 
 def planner_cfg_init(args_cli) -> fdm_planner.FDMPlannerCfg:
+    # check if planner mode is enabled
+    if args_cli.env == "baseline" and not PLANNER_MODE_BASELINE:
+        omni.log.warn(
+            "PLANNER_MODE_BASELINE is not enabled for the baseline env in fdm.__init__.py, please enable it for better"
+            " performance!"
+        )
+    elif args_cli.env != "baseline" and not PLANNER_MODE:
+        omni.log.warn(
+            f"PLANNER_MODE is not enabled for the env {args_cli.env} in fdm.__init__.py, please enable it for better"
+            " performance!"
+        )
+
     # setup runner
     if args_cli.env == "depth":
         cfg = fdm_planner.PlannerDepthCfg()

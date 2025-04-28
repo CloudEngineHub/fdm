@@ -27,7 +27,7 @@ __version__ = FDM_METADATA["package"]["version"]
 # Constants
 ###
 
-TOTAL_TIME_PREDICTION_HORIZON = 6.0  # seconds
+TOTAL_TIME_PREDICTION_HORIZON = 5.0  # seconds
 """Currently used for Ablation: Total time of the prediction horizon in seconds (i.e. command timestep * horizon)."""
 
 LARGE_UNIFIED_HEIGHT_SCAN = False
@@ -48,9 +48,9 @@ elif PLANNER_MODE:
     # VEL_RANGE_YAW = (-0.33, 0.33)
     VEL_RANGE_YAW = (-0.66, 0.66)
 elif PLANNER_MODE_BASELINE:
-    VEL_RANGE_X = (-0.1, 0.5)
+    VEL_RANGE_X = (-0.1, 0.75)
     VEL_RANGE_Y = (-0.2, 0.2)
-    VEL_RANGE_YAW = (-1.0, 1.0)
+    VEL_RANGE_YAW = (-0.7, 0.7)
 else:
     VEL_RANGE_X = (-0.1, 1.5)  # m/s  (prev. 0.2, 1.5)
     VEL_RANGE_Y = (-0.4, 0.4)  # m/s  (prev. -0.1, 0.1)

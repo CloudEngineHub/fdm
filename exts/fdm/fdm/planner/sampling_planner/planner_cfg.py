@@ -64,9 +64,9 @@ def get_planner_cfg(
             "_target_": "fdm.planner.BatchedMPPIOptimizer",
             "num_iterations": 1,
             "population_size": population_size,
-            "gamma": 1.0,  # 2.0,  # 0.91,  # FIXME: debug for baseline planning  (before 1.0)
-            "sigma": 0.87,  # 0.87,
-            "beta": 0.6,  # 0.2,  # 0.08, 0.5  # FIXME: debug for baseline planning  (before 0.6)
+            "gamma": 1.0,
+            "sigma": 0.87,
+            "beta": 0.6,
             "lower_bound": ["${action_cfg.lower_bound}" for i in range(traj_dim)],
             "upper_bound": ["${action_cfg.upper_bound}" for i in range(traj_dim)],
             "device": device,

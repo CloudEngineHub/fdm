@@ -18,10 +18,10 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import ContactSensorCfg, MultiMeshRayCasterCfg, patterns
-from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 from isaaclab_assets import ISAACLAB_ASSETS_DATA_DIR
+from nav_importer.importer import UnRealImporterCfg
 
 import fdm.mdp as mdp
 from fdm import FDM_DATA_DIR
@@ -66,7 +66,7 @@ class TerrainSceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
 
     # GENERATED TERRAIN
-    # terrain = TerrainImporterCfg(
+    # terrain = UnRealImporterCfg(
     #     prim_path="/World/ground",
     #     terrain_type="generator",
     #     # PILLAR TERRAIN
@@ -93,7 +93,7 @@ class TerrainSceneCfg(InteractiveSceneCfg):
     # )
 
     # USD TERRAIN
-    terrain = TerrainImporterCfg(
+    terrain = UnRealImporterCfg(
         prim_path="/World/ground",
         terrain_type="usd",
         usd_path=os.path.join(
@@ -140,6 +140,9 @@ class TerrainSceneCfg(InteractiveSceneCfg):
             intensity=2000.0,
         ),
     )
+
+    def __post_init__(self):
+        self.robot.spawn.articulation_props.enabled_self_collisions = False
 
 
 ##

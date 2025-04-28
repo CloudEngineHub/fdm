@@ -9,7 +9,7 @@ ISAACLAB_HOME=/home/pascal/orbit/IsaacLab
 ###
 
 MODEL_FDM="Nov19_20-56-45_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_reducedObs_Occlusion_NoEarlyCollFilter_NoTorque"
-BASELINE_FDM_MODEL="Mar04_17-42-57_Baseline_UnifiedCollLoss_BatchNorm"   # "Mar04_13-22-10_Baseline_NewEnv_NewCollisionShape_CorrLidar_UnifiedCollLoss_2DEnvPillar_BatchNorm"
+BASELINE_FDM_MODEL="Mar04_13-22-10_Baseline_NewEnv_NewCollisionShape_CorrLidar_UnifiedCollLoss_2DEnvPillar_BatchNorm"
 
 ###
 # 2D Environment

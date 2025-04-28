@@ -125,6 +125,14 @@ def main():
         cfg.env_cfg.scene.terrain.terrain_generator = fdm_terrain_cfg.PLANNER_EVAL_CFG
     elif args_cli.mode == "metric" and args_cli.env_type == "2D":
         cfg.env_cfg.scene.terrain.terrain_generator = fdm_terrain_cfg.PLANNER_EVAL_2D_CFG
+        if args_cli.env == "baseline":
+            # NOTE: for comparability, increase the obstacle height so that detactable by the 2D lidar
+            cfg.env_cfg.scene.terrain.terrain_generator.sub_terrains["single_box"].height_range[0] = 1.0
+            cfg.env_cfg.scene.terrain.terrain_generator.sub_terrains["single_cylinder"].height_range[0] = 1.0
+            cfg.env_cfg.scene.terrain.terrain_generator.sub_terrains["single_wall"].height_range[0] = 1.0
+            cfg.env_cfg.scene.terrain.terrain_generator.sub_terrains["box_cross_pattern"].height_range[0] = 1.0
+            cfg.env_cfg.scene.terrain.terrain_generator.sub_terrains["cylinder_cross_pattern"].height_range[0] = 1.0
+            cfg.env_cfg.scene.terrain.terrain_generator.sub_terrains["wall_cross_pattern"].height_range[0] = 1.0
     elif args_cli.mode == "metric" and args_cli.env_type == "3D":
         cfg.env_cfg.scene.terrain.terrain_generator = fdm_terrain_cfg.PLANNER_EVAL_3D_CFG
     elif args_cli.mode == "plot":
@@ -191,9 +199,12 @@ def main():
         cfg.env_cfg.scene.env_sensor.offset.pos = tuple(pos_offset)
     elif args_cli.env == "baseline":
         sampling_planner_cfg_dict["to_cfg"]["control"] = "fdm_baseline"
-        sampling_planner_cfg_dict["to_cfg"]["num_neighbors"] = 4
-        sampling_planner_cfg_dict["optim"]["population_size"] = 1024
-        sampling_planner_cfg_dict["to_cfg"]["collision_cost_safety_factor"] = 0.1
+        sampling_planner_cfg_dict["to_cfg"]["num_neighbors"] = 3
+        sampling_planner_cfg_dict["optim"]["population_size"] = 256
+        sampling_planner_cfg_dict["to_cfg"]["collision_cost_safety_factor"] = -0.1
+        sampling_planner_cfg_dict["to_cfg"]["collision_cost_high_risk_factor"] = 10 if args_cli.env_type == "2D" else 20
+        cfg.env_cfg.episode_length_s = 120.0
+        cfg.max_path_time = 120.0
     elif args_cli.env == "height":
         # Elevate height scan to make sure all obstacles are captured
         pos_offset = list(cfg.env_cfg.scene.env_sensor.offset.pos)

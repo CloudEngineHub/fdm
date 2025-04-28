@@ -17,7 +17,7 @@ from isaaclab_assets import ISAACLAB_ASSETS_DATA_DIR
 
 import nav_tasks.sensors as nav_patterns
 from nav_tasks import NAVSUITE_TASKS_DATA_DIR
-from nav_tasks.mdp.actions.navigation_se2_actions_cfg import ISAAC_GYM_JOINT_NAMES
+from nav_tasks.mdp.actions.navigation_actions_cfg import ISAAC_GYM_JOINT_NAMES
 
 import fdm.mdp as mdp
 
