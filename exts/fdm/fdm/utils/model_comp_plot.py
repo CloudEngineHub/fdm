@@ -20,9 +20,10 @@ from torch.utils.data import DataLoader
 
 import pandas as pd
 import seaborn as sns
-from isaaclab.sensors import RayCasterCfg
 from tabulate import tabulate
 from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, F1Score
+
+from isaaclab.sensors import RayCasterCfg
 
 from fdm import PAPER_COLORS_HEX, PAPER_COLORS_RGB_F, PAPER_COLORS_RGBA_F, VEL_RANGE_X, VEL_RANGE_Y, VEL_RANGE_YAW
 from fdm.model import FDMModel

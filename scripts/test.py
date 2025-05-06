@@ -66,12 +66,13 @@ import os
 import torch
 import torch.utils.benchmark as benchmark
 
+from isaacsim.sensors.camera import Camera
+
 import isaaclab.sim.spawners as sim_spawners
 from isaaclab.assets import AssetBaseCfg
 from isaaclab_tasks.utils import get_checkpoint_path
-from isaacsim.sensors.camera import Camera
 
-from nav_collectors.collectors import TrajectorySamplingCfg
+from nav_suite.collectors import TrajectorySamplingCfg
 
 import fdm.env_cfg.terrain_cfg as terrain_cfg
 import fdm.mdp as mdp

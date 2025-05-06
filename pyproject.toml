@@ -53,14 +53,15 @@ known_third_party = [
 ]
 # Imports from isaaclab
 known_isaaclab_thirdparty = [
-    "omni.isaac.lab",
-    "omni.isaac.lab_assets",
-    "omni.isaac.lab_tasks",
+    "isaaclab",
+    "isaaclab_assets",
+    "isaaclab_tasks",
+    "isaaclab_rl",
+    "isaaclab_mimic",
 ]
 # Imports from Nav Suite
 known_navsuite_thirdparty = [
-    "nav_collectors",
-    "nav_importers",
+    "nav_suite",
     "nav_tasks",
 ]
 # Imports from this repository

@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import isaacsim
+
 from isaaclab.envs.ui import ManagerBasedRLEnvWindow
 
 if TYPE_CHECKING:

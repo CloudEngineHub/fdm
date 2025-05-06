@@ -16,7 +16,7 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.utils import configclass
 
-from nav_collectors.collectors import TrajectorySamplingCfg
+from nav_suite.collectors import TrajectorySamplingCfg
 
 import fdm.env_cfg as fdm_env_cfg
 import fdm.mdp as mdp

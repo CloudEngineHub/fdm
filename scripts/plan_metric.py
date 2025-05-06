@@ -57,8 +57,9 @@ import yaml
 
 import omni
 import wandb
-from isaaclab_tasks.utils import get_checkpoint_path
 from tabulate import tabulate
+
+from isaaclab_tasks.utils import get_checkpoint_path
 
 from fdm.env_cfg import TERRAIN_ANALYSIS_CFG
 from fdm.planner import FDMPlanner, get_planner_cfg

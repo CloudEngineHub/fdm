@@ -21,7 +21,8 @@ from isaaclab.sensors import ContactSensorCfg, MultiMeshRayCasterCfg, patterns
 from isaaclab.utils import configclass
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 from isaaclab_assets import ISAACLAB_ASSETS_DATA_DIR
-from nav_importer.importer import UnRealImporterCfg
+
+from nav_suite.terrains import NavTerrainImporterCfg
 
 import fdm.mdp as mdp
 from fdm import FDM_DATA_DIR
@@ -66,7 +67,7 @@ class TerrainSceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
 
     # GENERATED TERRAIN
-    # terrain = UnRealImporterCfg(
+    # terrain = NavTerrainImporterCfg(
     #     prim_path="/World/ground",
     #     terrain_type="generator",
     #     # PILLAR TERRAIN
@@ -93,7 +94,7 @@ class TerrainSceneCfg(InteractiveSceneCfg):
     # )
 
     # USD TERRAIN
-    terrain = UnRealImporterCfg(
+    terrain = NavTerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="usd",
         usd_path=os.path.join(

@@ -42,8 +42,9 @@ import os
 import pickle
 import torch
 
-import isaaclab.sim as sim_utils
 import omni
+
+import isaaclab.sim as sim_utils
 from isaaclab.terrains import TerrainImporterCfg
 
 import fdm.mdp as mdp

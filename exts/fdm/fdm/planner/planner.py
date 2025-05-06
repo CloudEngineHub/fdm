@@ -13,17 +13,18 @@ import torch
 
 import cv2
 import hydra
-import isaaclab.utils.math as math_utils
 import omegaconf
 import pypose as pp
 import seaborn as sns
+
+import isaaclab.utils.math as math_utils
 from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab.markers import VisualizationMarkers
 from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG
 from isaaclab.utils.io import dump_yaml
 from isaaclab_tasks.utils import get_checkpoint_path
 
-from nav_collectors.terrain_analysis import TerrainAnalysis
+from nav_suite.terrain_analysis import TerrainAnalysis
 
 from fdm.env_cfg.ui import PlannerEnvWindow
 from fdm.mdp import GoalCommand
