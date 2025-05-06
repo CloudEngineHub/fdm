@@ -11,7 +11,7 @@
 </p>
 <p align="center">
   <a href="https://leggedrobotics.github.io/fdm.github.io/">Project Page</a> •
-  <a href="TODO">arXiv</a> •
+  <a href="https://arxiv.org/abs/2504.19322">arXiv</a> •
   <a href="TODO">Video</a> •
   <a href="#citation">BibTeX</a>
 </p>
@@ -37,12 +37,12 @@ Our novel perceptive Forward Dynamics Model (FDM) enables real-time, learned tra
 
 ## Paper
 
-A technical introduction to the theory behind wavemap is provided in our open-access RSS paper, available [here](TODO). For a quick overview, watch the accompanying 5-minute presentation [here](TODO). More information about the work is available in the abstract below.
+A technical introduction to the theory behind our perceptive FDM is provided in our open-access RSS paper, available [here](https://arxiv.org/abs/2504.19322). For a quick overview, watch the accompanying 5-minute presentation [coming soon](TODO). More information about the work is available in the abstract below.
 
 <details>
 <summary>Abstract</summary>
 <br>
-Ensuring safe navigation in complex environments requires accurate real-time traversability assessment and understanding of environmental interactions relative to the robot's capabilities. Traditional methods, which assume simplified dynamics, often require designing and tuning cost functions to safely guide paths or actions toward the goal. This process is tedious, environment-dependent, and not generalizable. To overcome these issues, we propose a novel learned perceptive Forward Dynamics Model (FDM) that predicts the robot’s future state conditioned on the surrounding geometry and history of proprioceptive measurements, proposing a more scalable, safer, and heuristic-free solution. The FDM is trained on multiple years of simulated navigation experience, including high-risk maneuvers, and real-world interactions to incorporate the full system dynamics beyond rigid body simulation. We integrate our perceptive FDM into a zero-shot Model Predictive Path Integral (MPPI) planning framework, leveraging the learned mapping between actions, future states, and failure probability. This allows for optimizing a simplified cost function, eliminating the need for extensive cost-tuning to ensure safety. On the legged robot ANYmal, the proposed perceptive FDM improves the position estimation over competitive baselines, which translates into a significantly higher navigation success rate in rough simulation environments.  Moreover, we demonstrate effective sim-to-real transfer and showcase the benefit of training on synthetic and real data. Code and models are made publicly available.
+Ensuring safe navigation in complex environments requires accurate real-time traversability assessment and understanding of environmental interactions relative to the robot's capabilities. Traditional methods, which assume simplified dynamics, often require designing and tuning cost functions to safely guide paths or actions toward the goal. This process is tedious, environment-dependent, and not generalizable. To overcome these issues, we propose a novel learned perceptive Forward Dynamics Model (FDM) that predicts the robot's future state conditioned on the surrounding geometry and history of proprioceptive measurements, proposing a more scalable, safer, and heuristic-free solution. The FDM is trained on multiple years of simulated navigation experience, including high-risk maneuvers, and real-world interactions to incorporate the full system dynamics beyond rigid body simulation. We integrate our perceptive FDM into a zero-shot Model Predictive Path Integral (MPPI) planning framework, leveraging the learned mapping between actions, future states, and failure probability. This allows for optimizing a simplified cost function, eliminating the need for extensive cost-tuning to ensure safety. On the legged robot ANYmal, the proposed perceptive FDM improves the position estimation by on average 41% over competitive baselines, which translates into a 27% higher navigation success rate in rough simulation environments. Moreover, we demonstrate effective sim-to-real transfer and showcase the benefit of training on synthetic and real data.
 </details>
 
 ### Citation
