@@ -120,7 +120,7 @@ BASELINE_2D_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
         #     position_pattern=fdm_terrain_gen.extended_cross_object_pattern,
         # ),
     },
-    border_height=2.5,
+    broder_height=-2.5,
     border_below_ground=False,
 )
 
@@ -237,7 +237,7 @@ PILLAR_TERRAIN_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
         ),
         "rsl_stairs": RslStairsCfg(),
     },
-    border_height=2.0,
+    broder_height=-2.0,
     border_below_ground=False,
 )
 
@@ -276,7 +276,7 @@ FDM_EXTEROCEPTIVE_TERRAINS_CFG = terrain_gen.TerrainGeneratorCfg(
     vertical_scale=0.005,
     slope_threshold=0.75,
     use_cache=False,
-    border_height=3.0,
+    broder_height=-3.0,
     border_below_ground=False,
     sub_terrains={
         "outdoor": fdm_terrain_gen.MeshPillarTerrainCfg(
@@ -362,7 +362,7 @@ FDM_EVAL_EXTEROCEPTIVE_TERRAINS_CFG = terrain_gen.TerrainGeneratorCfg(
 MAZE_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
     size=(20.0, 20.0),
     border_width=1.0,
-    border_height=3.0,
+    broder_height=-3.0,
     border_below_ground=False,
     num_cols=8,
     num_rows=6,
@@ -398,7 +398,7 @@ BASELINE_FLAT_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
             holes=False,
         ),
     },
-    border_height=2.0,
+    broder_height=-2.0,
     border_below_ground=False,
 )
 
@@ -457,7 +457,7 @@ PILLAR_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
         #     proportion=0.25,
         # ),
     },
-    border_height=3.0,
+    broder_height=-3.0,
     border_below_ground=False,
 )
 
@@ -481,7 +481,7 @@ GRID_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             holes=False,
         ),
     },
-    border_height=3.0,
+    broder_height=-3.0,
     border_below_ground=False,
 )
 
@@ -543,7 +543,7 @@ STAIRS_WALL_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             proportion=0.25,
         ),
     },
-    border_height=3.0,
+    broder_height=-3.0,
     border_below_ground=False,
 )
 
@@ -568,7 +568,7 @@ STAIRS_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             holes=False,
         ),
     },
-    border_height=3.0,
+    broder_height=-3.0,
     border_below_ground=False,
 )
 
@@ -654,7 +654,7 @@ STAIRS_RAMP_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             max_height=1.0,
         ),
     },
-    border_height=3.0,
+    broder_height=-3.0,
     border_below_ground=False,
 )
 
@@ -694,7 +694,7 @@ STAIRS_RAMP_LARGE_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             max_height=0.75,
         ),
     },
-    border_height=3.0,
+    broder_height=-3.0,
     border_below_ground=False,
 )
 
@@ -785,7 +785,7 @@ PLANNER_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             position_pattern=fdm_terrain_gen.cross_object_pattern,
         ),
     },
-    border_height=3.0,
+    broder_height=-3.0,
     border_below_ground=False,
 )
 
@@ -845,7 +845,7 @@ PLANNER_EVAL_2D_CFG = terrain_gen.TerrainGeneratorCfg(
             wall_width=0.2,
         ),
     },
-    border_height=0.0,
+    broder_height=-0.0,
     border_below_ground=False,
 )
 
@@ -906,7 +906,7 @@ PLANNER_EVAL_3D_CFG = terrain_gen.TerrainGeneratorCfg(
             max_height=1.0,
         ),
     },
-    border_height=3.0,
+    broder_height=-3.0,
     border_below_ground=False,
 )
 
@@ -968,7 +968,7 @@ PAPER_FIGURE_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
             max_height=1.0,
         ),
     },
-    border_height=0.2,
+    broder_height=-0.2,
     border_below_ground=False,
 )
 
@@ -998,7 +998,7 @@ PAPER_PLATFORM_FIGURE_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
             no_free_space_front=False,
         ),
     },
-    border_height=0.2,
+    broder_height=-0.2,
     border_below_ground=False,
 )
 
@@ -1067,6 +1067,6 @@ PAPER_PLANNER_FIGURE_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
             random_wall_probability=1.0,
         ),
     },
-    border_height=0.0,
+    broder_height=-0.0,
     border_below_ground=False,
 )

@@ -33,9 +33,9 @@ def add_fdm_args(parser: argparse.ArgumentParser, default_num_envs: int = 2048):
     )
     parser.add_argument("--occlusions", action="store_true", default=False, help="Add occlusion to the observations.")
     parser.add_argument("--noise", action="store_true", default=False, help="Add noise to the observations.")
-    parser.add_argument("--reduced_obs", action="store_true", default=False, help="Use a reduced set of observations.")
+    parser.add_argument("--reduced_obs", action="store_true", default=True, help="Use a reduced set of observations.")
     parser.add_argument(
-        "--remove_torque", action="store_true", default=False, help="Remove the joint torque from the observations."
+        "--remove_torque", action="store_true", default=True, help="Remove the joint torque from the observations."
     )
     parser.add_argument(
         "--ablation_mode",
