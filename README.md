@@ -61,7 +61,7 @@ Ensuring safe navigation in complex environments requires accurate real-time tra
 
 The extension is developed with [IsaacLab version 2.1.0](https://github.com/isaac-sim/IsaacLab/tree/v2.1.0) (latest tested commit 2e6946afb9b26f6949d4b1fd0a00e9f4ef733fcc). Future versions may work, but are not tested. IsaacLab runs on Ubuntu 20.04 - 24.04.
 
-NOTE: Please use an IsaacLab version where [PR2393](https://github.com/isaac-sim/IsaacLab/pull/2393) and [PR2183](https://github.com/isaac-sim/IsaacLab/pull/2183) have been merged, they contain changes necessary to run the scripts successfully.
+NOTE: Please use an IsaacLab version where [PR2393](https://github.com/isaac-sim/IsaacLab/pull/2393), [PR2394](https://github.com/isaac-sim/IsaacLab/pull/2394) and [PR2183](https://github.com/isaac-sim/IsaacLab/pull/2183) have been merged, they contain changes necessary to run the scripts successfully.
 
 For details on the IsaacLab extensions, see the [README](exts/fdm/docs/README.md)
 
