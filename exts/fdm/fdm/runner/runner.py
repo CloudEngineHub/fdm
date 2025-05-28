@@ -842,6 +842,9 @@ class FDMRunner:
     def _collect(self, eval: bool = False):
         """Collect data from the environment and store it in the trainer's storage."""
         print("[INFO]: Collecting data...")
+        if self.cfg.env_cfg.curriculum is not None:
+            # store env reset counter value from previous rounds
+            prev_env_reset_counter = self.env.curriculum_manager._term_cfgs[0].func.env_reset_counter
         # reset environment
         with torch.inference_mode():
             obs, _ = self.env.reset(random.randint(0, 1000000))
@@ -854,7 +857,7 @@ class FDMRunner:
             # if curriuclum activated, update counter got increased by number of all environments due to reset
             # balance the counter which will set the updated flag to False
             if self.cfg.env_cfg.curriculum is not None:
-                self.env.curriculum_manager._term_cfgs[0].func.env_reset_counter = 0
+                self.env.curriculum_manager._term_cfgs[0].func.env_reset_counter = prev_env_reset_counter
                 if self.env.curriculum_manager._term_cfgs[0].func.cfg.update_interval < self.env.num_envs:
                     print(
                         "[WARNING]: Update interval is smaller than number of environments. Ratio are already modified"
