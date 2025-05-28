@@ -330,14 +330,12 @@ class MPPIOptimizer(Optimizer):
         self.planning_horizon = len(lower_bound)
         self.population_size = population_size
         self.action_dimension = len(lower_bound[0])
-        self.mean = torch.zeros(
-            (self.planning_horizon, self.action_dimension),
-            device=device,
-            dtype=torch.float32,
-        )
 
         self.lower_bound = torch.tensor(lower_bound, device=device, dtype=torch.float32)
         self.upper_bound = torch.tensor(upper_bound, device=device, dtype=torch.float32)
+        # NOTE: to account for non-symmetric bounds, mean is computed as (ub - lb) / 2
+        self.mean = ((self.upper_bound + self.lower_bound) / 2).repeat(self.planning_horizon, 1)
+
         self.var = sigma**2 * torch.ones_like(self.lower_bound)
         self.beta = beta
         self.gamma = gamma
@@ -1067,13 +1065,12 @@ class BatchedMPPIOptimizer(Optimizer):
         self.population_size = population_size
         self.action_dimension = len(lower_bound[0])
         self.batch_size = batch_size
-        self.mean = torch.zeros(
-            (self.batch_size, self.planning_horizon, self.action_dimension),
-            device=device,
-            dtype=torch.float32,
-        )
+
         self.lower_bound = torch.tensor(lower_bound, device=device, dtype=torch.float32)
         self.upper_bound = torch.tensor(upper_bound, device=device, dtype=torch.float32)
+        # NOTE: to account for non-symmetric bounds, mean is computed as (ub - lb) / 2
+        self.mean = ((self.upper_bound + self.lower_bound) / 2).repeat(self.batch_size, 1, 1)
+
         self.var = sigma**2 * torch.ones_like(self.lower_bound)
         self.beta = beta
         self.gamma = gamma
@@ -1081,7 +1078,8 @@ class BatchedMPPIOptimizer(Optimizer):
         self.device = device
 
     def reset(self, env_ids: Sequence[int]):
-        self.mean[env_ids] *= 0.0
+        # NOTE: to account for non-symmetric bounds, mean is computed as (ub - lb) / 2
+        self.mean = ((self.upper_bound + self.lower_bound) / 2).repeat(self.batch_size, 1, 1)
 
     def optimize(
         self,
