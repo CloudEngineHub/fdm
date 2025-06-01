@@ -34,7 +34,13 @@ parser.add_argument(
     help="Name of the run.",
 )
 parser.add_argument("--terrain_analysis_points", type=int, default=10000, help="Number of points for terrain analysis.")
-parser.add_argument("--mode", type=str, default="test", choices=["metric", "test", "plot"], help="Mode of the script.")
+parser.add_argument(
+    "--mode",
+    type=str,
+    default="plot_video",
+    choices=["metric", "test", "plot", "plot_video"],
+    help="Mode of the script.",
+)
 parser.add_argument("--env_type", type=str, default="2D", choices=["2D", "3D"], help="Specific environment to pick.")
 parser.add_argument(
     "--cost_show",
@@ -57,7 +63,7 @@ if args_cli.mode == "test":
 elif args_cli.mode == "metric":
     args_cli.num_envs = 12 * 8
     args_cli.headless = True
-elif args_cli.mode == "plot":
+elif args_cli.mode == "plot" or args_cli.mode == "plot_video":
     args_cli.num_envs = 5
 
 # launch omniverse app
@@ -90,14 +96,20 @@ torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
 
 
-def add_env_cameras(planner: FDMPlanner):
+def add_env_cameras(planner: FDMPlanner, mode: str):
     from isaacsim.sensors.camera import Camera
 
     # add camera for each environment
     cameras = []
-    for i in range(planner.env.num_envs):
-        camera = Camera(prim_path=f"/World/floating_camera_{i}", resolution=(3600, 2430))
-        camera_pos = planner.env.scene.env_origins[i] + torch.tensor([-15, 0.0, 15], device=planner.env.device)
+    for i in range(planner.env.num_envs) if mode == "plot" else range(0, planner.env.num_envs - 1, 2):
+        if mode == "plot":
+            camera = Camera(prim_path=f"/World/floating_camera_{i}", resolution=(3600, 2430))
+            camera_pos = planner.env.scene.env_origins[i] + torch.tensor([-15, 0.0, 15], device=planner.env.device)
+        else:
+            camera = Camera(prim_path=f"/World/floating_camera_{i}", resolution=(7200, 2430))
+            camera_pos = (planner.env.scene.env_origins[i] + planner.env.scene.env_origins[i + 1]) / 2 + torch.tensor(
+                [-25, 0.0, 23], device=planner.env.device
+            )
         camera.set_world_pose(position=camera_pos.tolist(), orientation=[0.9396926, 0.0, 0.3420201, 0.0])
         camera.initialize()
         cameras.append(camera)
@@ -107,7 +119,7 @@ def add_env_cameras(planner: FDMPlanner):
 
 def main():
     # reduce required number of samples for the terrain analysis
-    if args_cli.mode in ["test", "plot"]:
+    if args_cli.mode in ["test", "plot", "plot_video"]:
         args_cli.terrain_analysis_points = 2000
 
     # setup runner
@@ -135,7 +147,7 @@ def main():
             cfg.env_cfg.scene.terrain.terrain_generator.sub_terrains["wall_cross_pattern"].height_range[0] = 1.0
     elif args_cli.mode == "metric" and args_cli.env_type == "3D":
         cfg.env_cfg.scene.terrain.terrain_generator = fdm_terrain_cfg.PLANNER_EVAL_3D_CFG
-    elif args_cli.mode == "plot":
+    elif args_cli.mode == "plot" or args_cli.mode == "plot_video":
         cfg.env_cfg.scene.terrain.terrain_generator = fdm_terrain_cfg.PAPER_PLANNER_FIGURE_TERRAIN_CFG
         # change the initial spawning and resetting function
         cfg.env_cfg.events.reset_base.func = mdp.reset_root_state_planner_paper_plot
@@ -151,7 +163,7 @@ def main():
         cfg.load_run = args_cli.run
 
     # modify the reset function for the robot base state
-    if args_cli.mode != "plot":
+    if args_cli.mode != "plot" and args_cli.mode != "plot_video":
         # remove the randomization of yaw in the reset_base event
         cfg.env_cfg.events.reset_base.params["yaw_range"] = (0.0, 0.0)
         # enable that it is spawned relative to the env origin
@@ -221,8 +233,8 @@ def main():
     if args_cli.cost_show != "None":
         planner.env._window.current_cost_viz_mode = args_cli.cost_show.replace("_", " ")
 
-    if args_cli.mode == "plot":
-        cameras = add_env_cameras(planner)
+    if args_cli.mode == "plot" or args_cli.mode == "plot_video":
+        cameras = add_env_cameras(planner, args_cli.mode)
         # navigate
         planner.test(cameras)
         # planner.test()

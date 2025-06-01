@@ -19,7 +19,7 @@
 <p align="center">
 
 [![IsaacSim](https://img.shields.io/badge/IsaacSim-4.5.0-silver.svg)](https://docs.isaacsim.omniverse.nvidia.com/latest/index.html)
-[![Isaac Lab](https://img.shields.io/badge/IsaacLab-2.0.1-silver)](https://isaac-sim.github.io/IsaacLab)
+[![Isaac Lab](https://img.shields.io/badge/IsaacLab-2.2.0-silver)](https://isaac-sim.github.io/IsaacLab)
 [![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://docs.python.org/3/whatsnew/3.10.html)
 [![Linux platform](https://img.shields.io/badge/platform-linux--64-orange.svg)](https://releases.ubuntu.com/20.04/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://pre-commit.com/)
@@ -59,9 +59,9 @@ Ensuring safe navigation in complex environments requires accurate real-time tra
 
 ### IsaacLab Extension (Training and Evaluation)
 
-The extension is developed with [IsaacLab version 2.1.0](https://github.com/isaac-sim/IsaacLab/tree/v2.1.0) (latest tested commit 2e6946afb9b26f6949d4b1fd0a00e9f4ef733fcc). Future versions may work, but are not tested. IsaacLab runs on Ubuntu 20.04 - 24.04.
+The extension is developed with [IsaacLab version 2.2.0](https://github.com/isaac-sim/IsaacLab/tree/v2.2.0) (latest tested commit 6183e153f09f8740ad911bccb93ad4f65f48dbfe). Future versions may work, but are not tested. IsaacLab runs on Ubuntu 20.04 - 24.04.
 
-NOTE: Please use an IsaacLab version where [PR2393](https://github.com/isaac-sim/IsaacLab/pull/2393), [PR2394](https://github.com/isaac-sim/IsaacLab/pull/2394) and [PR2183](https://github.com/isaac-sim/IsaacLab/pull/2183) have been merged, they contain changes necessary to run the scripts successfully.
+NOTE: Please use an IsaacLab version where [PR2183](https://github.com/isaac-sim/IsaacLab/pull/2183) has been merged, which contains changes necessary to run the scripts successfully.
 
 For details on the IsaacLab extensions, see the [README](exts/fdm/docs/README.md)
 
@@ -115,7 +115,7 @@ For details on the IsaacLab extensions, see the [README](exts/fdm/docs/README.md
 
 ### ROS Integration (Real-World Deployment)
 
-The integration is done with ROS Noetic on Ubuntu 20.04. For details on the ROS integration, see the [README](ros/README.md). It is recommended to use the docker image for a NVIDIA Jetson on the robot, which is provided [here](TODO).
+The integration is done with ROS Noetic on Ubuntu 20.04 for ANYmal D (Release 24.04). For details on the ROS integration, see the [README](ros/README.md).
 
 1. **Create a catkin workspace:**
    ```bash
@@ -131,7 +131,12 @@ The integration is done with ROS Noetic on Ubuntu 20.04. For details on the ROS 
 3. **Build the workspace:**
    ```bash
    cd ..
-   catkin build fdm_navigation_ros
+   catkin build fdm_navigation_ros waypoint_rviz_plugin
+   ```
+
+4. **Install the FDM Navigation Package**
+   ```bash
+   pip install -e src/forward_dynamics_model/forward_dynamics_model/ros/
    ```
 
 4. **Verify the installation:**
@@ -141,6 +146,18 @@ The integration is done with ROS Noetic on Ubuntu 20.04. For details on the ROS 
    source devel/setup.bash
    roslaunch fdm_navigation_ros planner.launch
    ```
+
+In order to use the `WaypointTool` to set waypoints for the planner, it has to be added to the rviz gui of ANYbotics.
+To do so, add following line under `Visualization Manager -> Tools`:
+
+```.rviz
+Visualization Manager:
+   ...
+   Tools:
+      - Class: rviz/WaypointTool
+        Topic: waypoint
+```
+
 
 ## Usage
 

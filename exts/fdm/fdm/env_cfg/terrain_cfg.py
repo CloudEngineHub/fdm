@@ -236,7 +236,7 @@ PILLAR_TERRAIN_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
         ),
         "rsl_stairs": RslStairsCfg(),
     },
-    broder_height=2.0,
+    border_height=2.0,
 )
 
 
@@ -274,7 +274,7 @@ FDM_EXTEROCEPTIVE_TERRAINS_CFG = terrain_gen.TerrainGeneratorCfg(
     vertical_scale=0.005,
     slope_threshold=0.75,
     use_cache=False,
-    broder_height=3.0,
+    border_height=3.0,
     sub_terrains={
         "outdoor": fdm_terrain_gen.MeshPillarTerrainCfg(
             proportion=0.4,
@@ -359,7 +359,7 @@ FDM_EVAL_EXTEROCEPTIVE_TERRAINS_CFG = terrain_gen.TerrainGeneratorCfg(
 MAZE_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
     size=(20.0, 20.0),
     border_width=1.0,
-    broder_height=3.0,
+    border_height=3.0,
     num_cols=8,
     num_rows=6,
     use_cache=False,
@@ -394,7 +394,7 @@ BASELINE_FLAT_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
             holes=False,
         ),
     },
-    broder_height=2.0,
+    border_height=2.0,
 )
 
 ###
@@ -452,7 +452,7 @@ PILLAR_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
         #     proportion=0.25,
         # ),
     },
-    broder_height=3.0,
+    border_height=3.0,
 )
 
 
@@ -475,7 +475,7 @@ GRID_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             holes=False,
         ),
     },
-    broder_height=3.0,
+    border_height=3.0,
 )
 
 
@@ -536,7 +536,7 @@ STAIRS_WALL_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             proportion=0.25,
         ),
     },
-    broder_height=3.0,
+    border_height=3.0,
 )
 
 
@@ -560,7 +560,7 @@ STAIRS_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             holes=False,
         ),
     },
-    broder_height=3.0,
+    border_height=3.0,
 )
 
 
@@ -645,7 +645,7 @@ STAIRS_RAMP_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             max_height=1.0,
         ),
     },
-    broder_height=3.0,
+    border_height=3.0,
 )
 
 
@@ -684,7 +684,7 @@ STAIRS_RAMP_LARGE_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             max_height=0.75,
         ),
     },
-    broder_height=3.0,
+    border_height=3.0,
 )
 
 ###
@@ -774,7 +774,7 @@ PLANNER_EVAL_CFG = terrain_gen.TerrainGeneratorCfg(
             position_pattern=fdm_terrain_gen.cross_object_pattern,
         ),
     },
-    broder_height=3.0,
+    border_height=3.0,
 )
 
 PLANNER_EVAL_2D_CFG = terrain_gen.TerrainGeneratorCfg(
@@ -833,7 +833,7 @@ PLANNER_EVAL_2D_CFG = terrain_gen.TerrainGeneratorCfg(
             wall_width=0.2,
         ),
     },
-    broder_height=0.0,
+    border_height=0.0,
 )
 
 
@@ -893,7 +893,7 @@ PLANNER_EVAL_3D_CFG = terrain_gen.TerrainGeneratorCfg(
             max_height=1.0,
         ),
     },
-    broder_height=3.0,
+    border_height=3.0,
 )
 
 
@@ -954,7 +954,7 @@ PAPER_FIGURE_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
             max_height=1.0,
         ),
     },
-    broder_height=0.2,
+    border_height=0.2,
 )
 
 
@@ -983,7 +983,7 @@ PAPER_PLATFORM_FIGURE_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
             no_free_space_front=False,
         ),
     },
-    broder_height=0.2,
+    border_height=0.2,
 )
 
 
@@ -1051,5 +1051,5 @@ PAPER_PLANNER_FIGURE_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
             random_wall_probability=1.0,
         ),
     },
-    broder_height=0.0,
+    border_height=0.0,
 )

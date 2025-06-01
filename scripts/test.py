@@ -32,7 +32,7 @@ parser.add_argument(
 # parser.add_argument("--runs", type=str, nargs="+", default="Nov19_20-56-45_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_reducedObs_Occlusion_NoEarlyCollFilter_NoTorque", help="Name of the run.")
 # parser.add_argument("--runs", type=str, nargs="+", default="Dec03_20-25-59_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_reducedObs_Occlusion_NoTorque", help="Name of the run.")
 parser.add_argument("--equal-actions", action="store_true", default=False, help="Have the same actions for all envs.")
-parser.add_argument("--paper-figure", action="store_true", default=True, help="Run paper figure test.")
+parser.add_argument("--paper-figure", action="store_true", default=False, help="Run paper figure test.")
 parser.add_argument(
     "--paper-platform-figure", action="store_true", default=False, help="Run paper platform figure test."
 )
@@ -343,6 +343,9 @@ def main():
             camera_rob_2.set_world_pose(position=[-5, 0.0, 4], orientation=[0.9250441, 0.0, 0.3798598, 0.0])
             camera_rob_2.initialize()
 
+            if args_cli.record:
+                cameras = [camera, camera_rob_1, camera_rob_2]
+
     # post modify runner and env
     runner = env_modifier_post_init(runner, args_cli=args_cli)
 
@@ -351,7 +354,7 @@ def main():
         export_to_jit(runner)
 
     # run test script
-    if args_cli.paper_figure and args_cli.record:
+    if (args_cli.paper_figure or args_cli.paper_platform_figure) and args_cli.record:
         runner.test(cameras=cameras)
     else:
         runner.test()

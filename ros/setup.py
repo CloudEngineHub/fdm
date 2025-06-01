@@ -9,6 +9,8 @@ from setuptools import find_packages, setup
 # Minimum dependencies required prior to installation     "opencv-python",
 INSTALL_REQUIRES = [
     # generic
+    "wheel>=0.45.1",
+    "packaging>=25.0",
     "numpy",
     "tqdm",
     "torchvision",

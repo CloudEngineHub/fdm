@@ -300,6 +300,7 @@ def aow_env(cfg: FDMCfg, env: str) -> FDMCfg:
     """Apply changes to the FDM configuration for the AOW environment."""
     # change robot in the scene
     cfg.scene.robot = ANYMAL_C_ON_WHEELS_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+    cfg.scene.robot.spawn.articulation_props.enabled_self_collisions = False
     # add necessary height scanner
     cfg.scene.height_scanner = MultiMeshRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",

@@ -434,7 +434,10 @@ class FDMPlanner:
             # setup image save path
             resume_path = get_checkpoint_path(self.log_root_path, self.cfg.load_run, self.cfg.load_checkpoint)
             directory_path = os.path.dirname(resume_path)
-            render_path = os.path.join(directory_path, "Planning_render")
+            if self.args_cli.mode == "plot":
+                render_path = os.path.join(directory_path, "Planning_render")
+            else:
+                render_path = os.path.join(directory_path, "Planning_render_video")
             os.makedirs(render_path, exist_ok=True)
             if self.env._window.current_cost_viz_mode is not None:
                 suffix = f"_{self.env._window.current_cost_viz_mode}"

@@ -586,7 +586,10 @@ class FDMRunner:
                 self.trainer.log_root_path, self.trainer.cfg.load_run, self.trainer.cfg.load_checkpoint
             )
             directory_path = os.path.dirname(resume_path)
-            render_path = os.path.join(directory_path, "dynamics_render")
+            if hasattr(self.args_cli, "paper_platform_figure") and self.args_cli.paper_platform_figure:
+                render_path = os.path.join(directory_path, "platform_render")
+            else:
+                render_path = os.path.join(directory_path, "dynamics_render")
             os.makedirs(render_path, exist_ok=True)
             cam_save_path = []
             for idx, camera in enumerate(cameras):
@@ -808,8 +811,18 @@ class FDMRunner:
             # save the images if cameras are provided
             if cameras is not None:
                 for idx, camera in enumerate(cameras):
-                    if idx != 3:
-                        continue
+                    if hasattr(self.args_cli, "paper_platform_figure") and self.args_cli.paper_platform_figure:
+                        if idx == 1:
+                            robot_pos_1 = self.env.scene.articulations["robot"].data.root_pos_w[idx] + torch.tensor(
+                                [-11.0, -1.0, 10], device=self.env.device
+                            )
+                            camera.set_world_pose(position=robot_pos_1, orientation=[0.9250441, 0.0, 0.3798598, 0.0])
+                        elif idx == 2:
+                            robot_pos_2 = self.env.scene.articulations["robot"].data.root_pos_w[idx] + torch.tensor(
+                                [-10.0, 0.0, 9], device=self.env.device
+                            )
+                            camera.set_world_pose(position=robot_pos_2, orientation=[0.9250441, 0.0, 0.3798598, 0.0])
+
                     for i in range(2):
                         self.env.sim.render()
                     camera.get_current_frame()
@@ -825,6 +838,16 @@ class FDMRunner:
                 # break if all environments are done
                 if torch.any(render_counter >= 500):
                     break
+
+        # save the images as a video
+        if cameras is not None:
+            print(f"[INFO]: Images saved to {cam_save_path}. Generating video.")
+            for idx, path in enumerate(cam_save_path):
+                os.system(
+                    f"ffmpeg -r {int(1 / self.env.step_dt)} -f image2 -s 1920x1080 -i"
+                    f" '{path}/img_%04d.png' -vcodec libx264 -profile:v high -crf 25 -pix_fmt yuv420p"
+                    f" '{path}/video.mp4'"
+                )
 
     def close(self):
         self.env.close()
