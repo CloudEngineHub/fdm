@@ -1079,7 +1079,7 @@ class BatchedMPPIOptimizer(Optimizer):
 
     def reset(self, env_ids: Sequence[int]):
         # NOTE: to account for non-symmetric bounds, mean is computed as (ub - lb) / 2
-        self.mean = ((self.upper_bound + self.lower_bound) / 2).repeat(self.batch_size, 1, 1)
+        self.mean[env_ids] = ((self.upper_bound + self.lower_bound) / 2).repeat(len(env_ids), 1, 1)
 
     def optimize(
         self,
