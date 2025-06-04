@@ -383,11 +383,10 @@ class MPPIOptimizer(Optimizer):
             population = noise.clone() * torch.sqrt(constrained_var)
 
             # smoothed actions with noise
-            population[:, 0, :] = self.beta * (self.mean[0, :] + noise[:, 0, :]) + (1 - self.beta) * past_action
+            population[:, 0, :] += self.beta * self.mean[0, :] + (1 - self.beta) * past_action
             for i in range(max(self.planning_horizon - 1, 0)):
-                population[:, i + 1, :] = (
-                    self.beta * (self.mean[i + 1] + noise[:, i + 1, :]) + (1 - self.beta) * population[:, i, :]
-                )
+                population[:, i + 1, :] += self.beta * self.mean[i + 1] + (1 - self.beta) * population[:, i, :]
+
             # clipping actions
             # This should still work if the bounds between dimensions are different.
             population = torch.where(population > self.upper_bound, self.upper_bound, population)
@@ -1135,13 +1134,10 @@ class BatchedMPPIOptimizer(Optimizer):
             # population = noise.clone() * torch.sqrt(self.var)
 
             # smoothed actions with noise
-            population[:, :, 0, :] = (
-                self.beta * (self.mean[env_ids, 0, :] + noise[:, :, 0, :]) + (1 - self.beta) * past_action
-            )
+            population[:, :, 0, :] += self.beta * self.mean[env_ids, 0, :] + (1 - self.beta) * past_action
             for i in range(max(self.planning_horizon - 1, 0)):
-                population[:, :, i + 1, :] = (
-                    self.beta * (self.mean[env_ids, i + 1] + noise[:, :, i + 1, :])
-                    + (1 - self.beta) * population[:, :, i, :]
+                population[:, :, i + 1, :] += (
+                    self.beta * self.mean[env_ids, i + 1] + (1 - self.beta) * population[:, :, i, :]
                 )
             # clipping actions
             # This should still work if the bounds between dimensions are different.
