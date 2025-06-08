@@ -259,7 +259,16 @@ class TrajectoryDataset(Dataset):
             )[0]
             small_movement_ratio = small_movement_idx.shape[0] / self.states.shape[0]
             if small_movement_ratio > self.cfg.small_motion_ratio:
-                small_movement_idx = small_movement_idx[: int(self.states.shape[0] * self.cfg.small_motion_ratio)]
+                # we want to remove samples until we reach the desired small motion ratio
+                # let x = small_movement_idx.shape[0]
+                # let N = self.states.shape[0]
+                # let r = self.cfg.small_motion_ratio
+                # solve for num_remove in: r = (x - num_remove) / (N - num_remove)
+                num_remove = int(
+                    (self.cfg.small_motion_ratio * self.states.shape[0] - small_movement_idx.shape[0])
+                    / (self.cfg.small_motion_ratio - 1)
+                )
+                small_movement_idx = small_movement_idx[:num_remove]
                 keep_idx[small_movement_idx] = False
 
         # filter samples with too little height difference
