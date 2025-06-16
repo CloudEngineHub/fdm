@@ -17,7 +17,7 @@ from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.sensors import ContactSensorCfg, MultiMeshRayCasterCfg, patterns
+from isaaclab.sensors import ContactSensorCfg, RayCasterCfg, patterns
 from isaaclab.utils import configclass
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 from isaaclab_assets import ISAACLAB_ASSETS_DATA_DIR
@@ -124,9 +124,9 @@ class TerrainSceneCfg(InteractiveSceneCfg):
     # robots
     robot = ANYMAL_D_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
     # sensors
-    height_scanner = MultiMeshRayCasterCfg(
+    height_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
-        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5 m above the base for door assessment
+        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5 m above the base for door assessment
         attach_yaw_only=True,
         pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=(1.6, 1.0)),
         debug_vis=False,

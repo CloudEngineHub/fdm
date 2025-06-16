@@ -129,7 +129,6 @@ class Trainer:
                     mode="min",
                     factor=0.5,
                     patience=self.cfg.lr_scheduler_patience,
-                    verbose=True,
                     min_lr=1e-6,
                 )
             if self.cfg.early_stopping:

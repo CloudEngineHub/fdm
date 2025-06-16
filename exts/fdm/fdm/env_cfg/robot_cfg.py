@@ -11,7 +11,7 @@ import os
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import SceneEntityCfg
-from isaaclab.sensors import MultiMeshRayCasterCfg, patterns
+from isaaclab.sensors import RayCasterCfg, patterns
 from isaaclab.utils import configclass
 from isaaclab_assets import ISAACLAB_ASSETS_DATA_DIR
 
@@ -93,9 +93,9 @@ def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
     """Apply changes to the FDM configuration for the ANYmal Perceptive environment."""
     # change height scanner for the robot
     cfg.scene.height_scanner = None
-    cfg.scene.foot_scanner_lf = MultiMeshRayCasterCfg(
+    cfg.scene.foot_scanner_lf = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/LF_FOOT",
-        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
+        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
         attach_yaw_only=True,
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
@@ -103,9 +103,9 @@ def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
         max_distance=10.0,
     )
 
-    cfg.scene.foot_scanner_rf = MultiMeshRayCasterCfg(
+    cfg.scene.foot_scanner_rf = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/RF_FOOT",
-        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
+        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
         attach_yaw_only=True,
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
@@ -113,9 +113,9 @@ def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
         max_distance=10.0,
     )
 
-    cfg.scene.foot_scanner_lh = MultiMeshRayCasterCfg(
+    cfg.scene.foot_scanner_lh = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/LH_FOOT",
-        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
+        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
         attach_yaw_only=True,
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
@@ -123,9 +123,9 @@ def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
         max_distance=10.0,
     )
 
-    cfg.scene.foot_scanner_rh = MultiMeshRayCasterCfg(
+    cfg.scene.foot_scanner_rh = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/RH_FOOT",
-        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
+        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
         attach_yaw_only=True,
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
@@ -302,9 +302,9 @@ def aow_env(cfg: FDMCfg, env: str) -> FDMCfg:
     cfg.scene.robot = ANYMAL_C_ON_WHEELS_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
     cfg.scene.robot.spawn.articulation_props.enabled_self_collisions = False
     # add necessary height scanner
-    cfg.scene.height_scanner = MultiMeshRayCasterCfg(
+    cfg.scene.height_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
-        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),
+        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),
         attach_yaw_only=True,
         pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=(1.6, 1.0), ordering="yx"),
         debug_vis=False,

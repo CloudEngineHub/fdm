@@ -9,7 +9,7 @@ from __future__ import annotations
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import SceneEntityCfg
-from isaaclab.sensors import MultiMeshRayCasterCfg
+from isaaclab.sensors import RayCasterCfg
 from isaaclab.utils import configclass
 
 import fdm.mdp as mdp
@@ -28,9 +28,9 @@ class BaselineTerrainSceneCfg(TerrainSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
 
     # environment sensor
-    env_sensor = MultiMeshRayCasterCfg(
+    env_sensor = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
-        offset=MultiMeshRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),  # TODO: get the correct offset
+        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),  # TODO: get the correct offset
         pattern_cfg=patterns.Lidar2DPatternCfg(horizontal_res=1),
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],

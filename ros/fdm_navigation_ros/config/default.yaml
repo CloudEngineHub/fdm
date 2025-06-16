@@ -2,24 +2,20 @@ debug: True
 verbose: False
 path_topic: ~path
 optimized_path_topic: ~optimized_path_topic
-twist_topic: ~twist # /motion_reference/command_twist #
-smooth_twist_topic: ~smooth_twist  # /motion_reference/command_twist # ~smooth_twist
-lookahead_twist_topic: /path_planning_and_following/twist # /motion_reference/command_twist # ~lookahead_twist
+twist_topic: ~twist
+smooth_twist_topic: ~smooth_twist
+lookahead_twist_topic: /path_planning_and_following/twist
 projected_goal_topic: ~projected_goal
 
 # topics to construct the observation space
 joint_actions_topic: /anymal_low_level_controller/actuator_readings
 state_estimator_topic: /state_estimator/anymal_state
-gridmap_topic: /elevation_mapping/elevation_map_raw
+gridmap_topic: /elevation_mapping/elevation_map_raw  # this assumes the https://github.com/leggedrobotics/elevation_mapping_cupy is used
 gridmap_layer: elevation
 goal_topic:  /mp_waypoint
 
 # model path
-# model_path: /root/git/models/Dec03_20-27-43_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_Noise_reducedObs_Occlusion_NoTorque_NewHeightScanNoise_NewNNTrainNoise_SchedEp10_Wait4_Decay5e5
-# model_path: /root/git/models/Nov19_22-48-29_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_Noise_reducedObs_Occlusion_NoEarlyCollFilter_NoTorque_NewHeightScanNoise/
-# model_path: /home/pascalr/orbit/IsaacLab/logs/fdm/fdm_se2_prediction_depth/Nov19_22-48-29_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_Noise_reducedObs_Occlusion_NoEarlyCollFilter_NoTorque_NewHeightScanNoise
-model_path: /home/pascalr/orbit/IsaacLab/logs/fdm/fdm_se2_prediction_depth/Nov19_20-56-45_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_reducedObs_Occlusion_NoEarlyCollFilter_NoTorque
-# model_path: /home/pascalr/orbit/IsaacLab/logs/fdm/fdm_se2_prediction_depth/Dec03_20-27-43_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_Noise_reducedObs_Occlusion_NoTorque_NewHeightScanNoise_NewNNTrainNoise_SchedEp10_Wait4_Decay5e5
+model_path: <path_to_model>
 
 remove_torque: True
 
@@ -33,7 +29,7 @@ map: map
 restricted_forward_motion_range: [-0.1, 0.5]
 restricted_sideward_motion_range: [-0.1, 0.1]
 # restricted_rotation_range: [-0.33, 0.33]
-height_scan_dilution: False  # True
+height_scan_dilution: False
 
 use_dynamic_reconfigure: False
 invert_twist: False
