@@ -112,7 +112,6 @@ class PlannerNode:
         verify if there is some problem with indexing the gridmap if it is in a different frame the odometry published
 
         """
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         ###
         # Setup ROS Node
@@ -129,8 +128,16 @@ class PlannerNode:
         # FDM Model and config
         ###
 
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        if self.device == "cuda" and self.cuda_device_number is not None:
+            self.device = f"cuda:{self.cuda_device_number}"
+        print(
+            f"[INFO] Using device: {self.device} (Device name: {torch.cuda.get_device_name(self.device)}) and compute"
+            f" capability: {torch.cuda.get_device_capability(self.device)}"
+        )
+
         # load the jit compiled model
-        if self.device == "cuda":
+        if "cuda" in self.device:
             self.model = (
                 torch.jit.load(os.path.join(self.model_path, "export", "model_cuda_jit.pth")).to(self.device).eval()
             )
@@ -792,6 +799,9 @@ class PlannerNode:
         # plot params
         self.add_path_to_plan = rospy.get_param("~add_path_to_plan", default=False)
         self.predict_path_without_plan = rospy.get_param("~predict_path_without_plan", default=False)
+
+        # cuda device number
+        self.cuda_device_number = rospy.get_param("~cuda_device_number", default=0)
 
     @torch.inference_mode()
     def dynamic_configuration_callback(self, cfg, level):

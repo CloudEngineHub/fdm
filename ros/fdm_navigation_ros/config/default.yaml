@@ -43,3 +43,6 @@ do_not_publish_heading_offset: 2.0
 # adjustments for plots
 add_path_to_plan: False
 predict_path_without_plan: False
+
+# cuda device number
+cuda_device_number: 0
