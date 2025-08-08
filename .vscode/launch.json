@@ -31,59 +31,13 @@
             "envFile": "${workspaceFolder}/.vscode/.python.env",
         },
         {
-            "name": "Python: Train Environment",
+            "name": "Python: Train FDM",
             "type": "debugpy",
             "request": "launch",
-            "args" : ["--task", "Template-Isaac-Velocity-Flat-Anymal-D-v0", "--num_envs", "4096", "--headless"],
-            "program": "${workspaceFolder}/scripts/rsl_rl/train.py",
+            "args" : ["--run_name", "fdm_train", "--mode", "train"],
+            "program": "${workspaceFolder}/scripts/train.py",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.vscode/.python.env",
-        },
-        {
-            "name": "Python: Play Environment",
-            "type": "debugpy",
-            "request": "launch",
-            "args" : ["--task", "Template-Isaac-Velocity-Flat-Anymal-D-Play-v0", "--num_envs", "32"],
-            "program": "${workspaceFolder}/scripts/rsl_rl/play.py",
-            "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.vscode/.python.env",
-        },
-
-        // For script execution inside a Docker
-        {
-            "name": "Docker: Current File",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.vscode/.python.env",
-            "env": {
-                "PYTHONPATH": "${env:PYTHONPATH}:${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Docker: Train Environment",
-            "type": "debugpy",
-            "request": "launch",
-            "args" : ["--task", "Template-Isaac-Velocity-Flat-Anymal-D-v0", "--num_envs", "4096", "--headless"],
-            "program": "${workspaceFolder}/scripts/rsl_rl/train.py",
-            "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.vscode/.python.env",
-            "env": {
-                "PYTHONPATH": "${env:PYTHONPATH}:${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Docker: Play Environment",
-            "type": "debugpy",
-            "request": "launch",
-            "args" : ["--task", "Template-Isaac-Velocity-Flat-Anymal-D-Play-v0", "--num_envs", "32"],
-            "program": "${workspaceFolder}/scripts/rsl_rl/play.py",
-            "console": "integratedTerminal",
-            "envFile": "${workspaceFolder}/.vscode/.python.env",
-            "env": {
-                "PYTHONPATH": "${env:PYTHONPATH}:${workspaceFolder}"
-            }
         }
     ]
 }

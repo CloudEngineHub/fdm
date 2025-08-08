@@ -84,10 +84,12 @@ class SamplingPlannerAgent(Agent):
         obs["planner_obs"]["resample_population"][env_ids] = True
 
         # add states, proprio and extero observations to the planner obs
-        obs["planner_obs"]["states"] = self._runner.replay_buffer.local_state_history[env_ids].clone()
-        obs["planner_obs"]["proprio_obs"] = self._runner.replay_buffer.local_proprioceptive_observation_history[
-            env_ids
-        ].clone()
+        obs["planner_obs"]["states"] = (
+            self._runner.replay_buffer.local_state_history[env_ids.cpu()].clone().to(self.device)
+        )
+        obs["planner_obs"]["proprio_obs"] = (
+            self._runner.replay_buffer.local_proprioceptive_observation_history[env_ids.cpu()].clone().to(self.device)
+        )
         obs["planner_obs"]["extero_obs"] = obs["fdm_obs_exteroceptive"][env_ids].clone()
 
         # replan for the environments

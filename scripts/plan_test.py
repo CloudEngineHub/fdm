@@ -30,14 +30,14 @@ parser = argparse.ArgumentParser(description="Test Script for MPPI Planning with
 parser.add_argument(
     "--run",
     type=str,
-    default="Nov19_20-56-45_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_reducedObs_Occlusion_NoEarlyCollFilter_NoTorque",
+    default="fdm_latest",
     help="Name of the run.",
 )
 parser.add_argument("--terrain_analysis_points", type=int, default=10000, help="Number of points for terrain analysis.")
 parser.add_argument(
     "--mode",
     type=str,
-    default="plot_video",
+    default="plot",
     choices=["metric", "test", "plot", "plot_video"],
     help="Mode of the script.",
 )

@@ -284,10 +284,6 @@ class FDMPlanner:
 
             # planning
             if len(replan_envs) > 0:
-                # if torch.any(obs["planner_obs"]["resample_population"]):
-                #     print(f"[INFO]: Resampling population for {torch.where(obs['planner_obs']['resample_population'])[0].tolist()}")
-                #     print(f"[INFO]: Buffer step idx {self._obs_env_step_counter[obs['planner_obs']['resample_population'].cpu()].tolist()}")
-
                 # add states, proprio and extero observations to the planner obs
                 obs["planner_obs"]["states"] = self._state_history.clone()
                 obs["planner_obs"]["proprio_obs"] = self._proprio_obs_history.clone()
@@ -307,9 +303,6 @@ class FDMPlanner:
                 se2_positions_w[replan_envs] = se2_positions_w_pred[:, 0, :, :]
 
             if len(replan_not_filled) > 0:
-                # print(f"[INFO]: Resampling population for not filled buffer {replan_not_filled}")
-                # print(f"[INFO]: Buffer step idx {self._obs_env_step_counter[replan_not_filled].tolist()}")
-
                 # replace actions if obs buffer has not been filled yet
                 se2_velocity_b[replan_not_filled] = torch.roll(initial_rand_actions[replan_not_filled], 1, dims=1)
                 se2_positions_w[replan_not_filled] *= 0
@@ -531,15 +524,15 @@ class FDMPlanner:
 
             # planning
             if len(replan_envs) > 0:
-                if torch.any(obs["planner_obs"]["resample_population"]):
-                    print(
-                        "[INFO]: Resampling population for"
-                        f" {torch.where(obs['planner_obs']['resample_population'])[0].tolist()}"
-                    )
-                    print(
-                        "[INFO]: Buffer step idx"
-                        f" {self._obs_env_step_counter[obs['planner_obs']['resample_population'].cpu()].tolist()}"
-                    )
+                # if torch.any(obs["planner_obs"]["resample_population"]):
+                #     print(
+                #         "[INFO]: Resampling population for"
+                #         f" {torch.where(obs['planner_obs']['resample_population'])[0].tolist()}"
+                #     )
+                #     print(
+                #         "[INFO]: Buffer step idx"
+                #         f" {self._obs_env_step_counter[obs['planner_obs']['resample_population'].cpu()].tolist()}"
+                #     )
 
                 # add states, proprio and extero observations to the planner obs
                 obs["planner_obs"]["states"] = self._state_history.clone()
@@ -718,10 +711,10 @@ class FDMPlanner:
         # transform the velocity commands into world frame
         lin_vel_b = torch.zeros((se2_velocity_b.shape[0], 3), device=self.env.device)
         lin_vel_b[:, :2] = se2_velocity_b[:, :2]
-        lin_vel_w = math_utils.quat_rotate_inverse(base_quat_w, lin_vel_b)
+        lin_vel_w = math_utils.quat_apply_inverse(base_quat_w, lin_vel_b)
         ang_vel_b = torch.zeros((se2_velocity_b.shape[0], 3), device=self.env.device)
         ang_vel_b[:, 2] = se2_velocity_b[:, 2]
-        ang_vel_w = math_utils.quat_rotate_inverse(base_quat_w, ang_vel_b)
+        ang_vel_w = math_utils.quat_apply_inverse(base_quat_w, ang_vel_b)
         return torch.hstack((lin_vel_w[:, :2], ang_vel_w[:, 2].unsqueeze(1))).reshape(-1, TRAJ_DIM, 3)
 
     def _planner_eval_metrics(

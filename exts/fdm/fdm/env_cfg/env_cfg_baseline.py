@@ -30,12 +30,11 @@ class BaselineTerrainSceneCfg(TerrainSceneCfg):
     # environment sensor
     env_sensor = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
-        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),  # TODO: get the correct offset
+        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),
         pattern_cfg=patterns.Lidar2DPatternCfg(horizontal_res=1),
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
         max_distance=10.0,
-        attach_yaw_only=False,
     )
 
     def __post_init__(self):

@@ -6,13 +6,13 @@
 
 <p align="center">
 
-  [![Youtube Video](./docs/overview.png)](TODO)
+  [![Youtube Video](./docs/overview.png)](https://youtu.be/QqK0IKINJEQ?t=761)
 
 </p>
 <p align="center">
   <a href="https://leggedrobotics.github.io/fdm.github.io/">Project Page</a> •
   <a href="https://arxiv.org/abs/2504.19322">arXiv</a> •
-  <a href="TODO">Video</a> •
+  <a href="https://youtu.be/QqK0IKINJEQ?t=761">Video</a> •
   <a href="#citation">BibTeX</a>
 </p>
 
@@ -37,7 +37,7 @@ Our novel perceptive Forward Dynamics Model (FDM) enables real-time, learned tra
 
 ## Paper
 
-A technical introduction to the theory behind our perceptive FDM is provided in our open-access RSS paper, available [here](https://arxiv.org/abs/2504.19322). For a quick overview, watch the accompanying 5-minute presentation [coming soon](TODO). More information about the work is available in the abstract below.
+A technical introduction to the theory behind our perceptive FDM is provided in our open-access RSS paper, available [here](https://arxiv.org/abs/2504.19322). For a quick overview, watch the accompanying 5-minute presentation [YouTube](https://youtu.be/QqK0IKINJEQ?t=761). More information about the work is available in the abstract below.
 
 <details>
 <summary>Abstract</summary>
@@ -59,59 +59,51 @@ Ensuring safe navigation in complex environments requires accurate real-time tra
 
 ### IsaacLab Extension (Training and Evaluation)
 
-The extension is developed with [IsaacLab version 2.2.0](https://github.com/isaac-sim/IsaacLab/tree/v2.2.0) (latest tested commit 6183e153f09f8740ad911bccb93ad4f65f48dbfe). Future versions may work, but are not tested. IsaacLab runs on Ubuntu 20.04 - 24.04.
+<p style="background-color:#ffdddd; border-left:4px solid #f44336; padding:10px;">
+  <strong>⚠️ WARNING:</strong> With our code update to the latest IsaacLab version, we experience the robot sinking into the ground which will affect model learning. We are investigating the issue.
+</p>
 
-NOTE: Please use an IsaacLab version where [PR2183](https://github.com/isaac-sim/IsaacLab/pull/2183) has been merged, which contains changes necessary to run the scripts successfully.
+The extension is developed with [IsaacLab version 2.1.1](https://github.com/isaac-sim/IsaacLab/tree/v2.1.1) (latest
+tested commit 19b24c7). Future versions may work, but are not tested. IsaacLab runs on Ubuntu 20.04 - 24.04. Our paper
+results are using the locomotion policy by [Miki et al.](https://www.science.org/doi/full/10.1126/scirobotics.abk2822).
+As this one is not public, the repos default is the standard IsaacLab ANYmal policy with reduced stability. Furthermore,
+no new parameter parameter tuning has been performed. Results may therefore differ.
 
-For details on the IsaacLab extensions, see the [README](exts/fdm/docs/README.md)
+The extension is installed as follows:
 
-1. **Install IsaacSim and IsaacLab:**
-   Follow the [IsaacLab installation guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html) to ensure IsaacSim and IsaacLab are installed.
+1. **Install IsaacSim and IsaacLab:** \
+   Follow the [IsaacLab installation guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html)
+   to ensure IsaacSim and IsaacLab are installed. \
+   NOTE: Please use an IsaacLab version where [PR2183](https://github.com/isaac-sim/IsaacLab/pull/2183) has been merged, which contains changes necessary to run the scripts successfully.
 
-2. **Add this repository as a submodule to your IsaacLab project:**
+2. **Clone this repository and install as part of IsaacLab:**
+
    ```bash
-   cd IsaacLab
-   git submodule add git@github.com:leggedrobotics/forward_dynamics_model.git fdm_sub
-   ```
-   **Important**: The submodule name cannot be `fdm` as this leads to import errors when using the pip installation from IsaacLab 4.2 upwards.
+   git clone git@github.com:leggedrobotics/fdm.git
 
-   Recursively update the submodule:
+   cd <path-to-isaaclab-repo>
+
+   ./isaaclab.sh -p -m pip install -e <path-to-your-fdm-repo>/exts/fdm
+   ./isaaclab.sh -p -m pip install -e <path-to-your-fdm-repo>/nav-suite/exts/nav_suite
+   ./isaaclab.sh -p -m pip install -e <path-to-your-fdm-repo>/nav-suite/exts/nav_tasks
+
+   ```
+   **Important**: Make sure the submodules are correctly initialized and assets are downloaded from git lfs (Install instructions [here](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage)):
    ```bash
-   git submodule update --init --recursive
-   ```
-
-   Download the assets from git lfs (Install instructions [here](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage))
-   ```
-   cd fdm_sub
+   cd <path-to-your-fdm-repo>
+   git submodule update --init
    git lfs pull
-   cd ..
    ```
 
-3. **Link the extensions into the source directory:**
-   ```bash
-   cd source
-   ln -s ../fdm_sub/exts/fdm .
-   ```
-   In addition, the FDM implementation depends on the [isaac-nav-suite](https://github.com/leggedrobotics/isaac-nav-suite) which is already included as a submodule in the FDM repo. Also the nav-suite extensions need to be linked into the source directory. Then leave the source directory.
-   ```bash
-   ln -s ../fdm_sub/isaac-nav-suite/exts/nav_suite .
-   ln -s ../fdm_sub/isaac-nav-suite/exts/nav_tasks .
-   cd ..
-   ```
-
-4. **Build the project:**
-   All extensions are automatically build with the IsaacLab install functionality.
-
-   ```bash
-   ./isaaclab.sh -i
-   ```
-
-5. **Verify the installation:**
+3. **Verify the installation:**
    To verify the installation, run the training script in debug mode:
    ```bash
-   ./isaaclab.sh -p fdm_sub/scripts/train.py --mode debug
+   cd <path-to-your-fdm-repo>
+   <path-to-isaaclab-repo>/isaaclab.sh -p scripts/train.py --mode debug
    ```
    The IsaacSim GUI should open and data collection should start, meaning the robots are moving. Later, the FDM training should start.
+
+For further details on the IsaacLab extensions, see the [README](exts/fdm/docs/README.md)
 
 ### ROS Integration (Real-World Deployment)
 
@@ -163,30 +155,43 @@ Visualization Manager:
 
 ### Model Demo
 
-The latest model (`model.zip`) is available to download:
+The latest model (`model.zip`) trained with the locomotion policy of Miki et al. are available to download:
 - [Simulation Model](https://drive.google.com/file/d/1_vkiW4cwW7f--ua7N7ZO5LR8-eOF3Zga/view?usp=sharing)
 - [Real-World Fine-Tuned Model](https://drive.google.com/file/d/1mphOSa1ar3sw4IfVPSEcUnGXEN7wiBU9/view?usp=sharing)
 
 **IMPORTANT** For evaluations in simulation, it is recommended to use the simulation model as it is not fitted for a particular real-world platform.
 
-Follow the instructions above to setup the FDM extension for IsaacLab, then extract the model inside `IsaacLab/logs/fdm/fdm_se2_prediction_depth/fdm_latest`:
+**NOTE**: The repos default is the IsaacLab locomotion policy, as the one of Miki et al. is not public. For comparable results, please retrain with possible adjusted parameters.
+
+Follow the instructions above to setup the FDM extension for IsaacLab, then extract the model inside `<path-to-your-fdm-repo>/logs/fdm/fdm_se2_prediction_depth/fdm_latest`:
 
 ```bash
-mkdir -p IsaacLab/logs/fdm/fdm_se2_prediction_depth/fdm_latest
-cd IsaacLab/logs/fdm/fdm_se2_prediction_depth/fdm_latest
+mkdir -p <path-to-your-fdm-repo>/logs/fdm/fdm_se2_prediction_depth/fdm_latest
+cd <path-to-your-fdm-repo>/logs/fdm/fdm_se2_prediction_depth/fdm_latest
+mv <path-to-model-download>/model.zip .
 unzip model.zip
 ```
 
-then run the test script for the dynamic estimation model:
+then run the test script for the dynamics estimation model:
 
 ```bash
-./isaaclab.sh -p fdm_sub/scripts/test.py --runs fdm_latest
+cd <path-to-your-fdm-repo>
+<path-to-isaaclab-repo>/isaaclab.sh -p scripts/test.py --runs fdm_latest
 ```
 
-or for the planning:
+or for the planning first set the parameters into `planning_mode` (during training some bounds are higher to increase
+stability later but then are adjusted for the actual planning tasks), this can be done in the
+[__init__](./exts/fdm/fdm/__init__.py) line 36. The planner test script can then be executed as follows:
 
 ```bash
-./isaaclab.sh -p fdm_sub/scripts/plan_test.py --run fdm_latest --mode test
+cd <path-to-your-fdm-repo>
+<path-to-isaaclab-repo>/isaaclab.sh -p scripts/plan_test.py --run fdm_latest --mode test
+```
+
+To get the same simulation plot as provided in the paper, execute
+
+```bash
+./isaaclab.sh -p fdm_sub/scripts/plan_test.py --run fdm_latest --mode plot
 ```
 
 ### Training
@@ -197,10 +202,10 @@ To train the Forward Dynamics Model, follow these steps:
    Run the training script:
 
    ```bash
-   ./isaaclab.sh -p fdm_sub/scripts/train.py --mode train  --run_name <your-run-name>
+   <path-to-isaaclab-repo>/isaaclab.sh -p scripts/train.py --mode train  --run_name <your-run-name>
    ```
 
-   This will per default execute a training on ANYmal with a perceptive policy. For arguments that can be passed directly to the run script, see `./isaaclab.sh -p fdm_sub/scripts/train.py -h`. Detailed configuration for the environment, observation space, model, and much more is given in:
+   This will per default execute a training on ANYmal with a perceptive policy. For arguments that can be passed directly to the run script, see `<path-to-isaaclab-repo>/isaaclab.sh -p scripts/train.py -h`. Detailed configuration for the environment, observation space, model, and much more is given in:
 
    - [IsaacLab Configs (mdp, terrain, robot, ...)](exts/fdm/fdm/env_cfg)
    - [Model Configs](exts/fdm/fdm/model)
@@ -214,7 +219,7 @@ To train the Forward Dynamics Model, follow these steps:
    During the training, evaluation steps in test environments can be performed. The data for those environments in typically pre-collected and remains constant for different trainings. The dataset paths can be defined in the [TrainerCfg](exts/fdm/fdm/runner/trainer/trainer_cfg.py). The collected of the datasets is done by executing:
 
    ```bash
-   ./isaaclab.sh -p fdm_sub/scripts/test_data_collector.py --test_env <env-name>
+   <path-to-isaaclab-repo>/isaaclab.sh -p scripts/test_data_collector.py --test_env <env-name>
    ```
 
 2. **Real-World Data Collection:**
@@ -238,14 +243,14 @@ To train the Forward Dynamics Model, follow these steps:
    This process creates `train.pkl` and `val.pkl` files, used for fine tuning.
    The fine-tuning data used in this work is available [here](https://drive.google.com/file/d/1aFuScInnLjh2eukqOnnL-5ydqcUSpUbE/view?usp=sharing) and should be unzipped to `IsaacLab/logs/fdm/real_world_datasets`.
 
-   The original rosbags are made available as part of the RSL GrandTour Dataset see [here](TODO).
+   The original rosbags are made available as part of the RSL GrandTour Dataset see [here](https://grand-tour.leggedrobotics.com/).
 
 3. **Real-World Fine-Tuning:**
 
    To fine-tune the model on the collected data, run the following script:
 
    ```bash
-   ./isaaclab.sh -p fdm_sub/scripts/train.py --mode train-real-world  --run_name <your-run-name>  --real-world-dilution 10
+   <path-to-isaaclab-repo>/isaaclab.sh -p scripts/train.py --mode train-real-world  --run_name <your-run-name>  --real-world-dilution 10
    ```
 
    The real-world datasets are currently hard-coded in the `train.py` function, to the ones that can be downloaded as described above. Please adjust the paths for your own data in the `train.py` script.
@@ -259,17 +264,17 @@ To train the Forward Dynamics Model, follow these steps:
       A qualitative evaluation of the dynamics estimation in **defined test environments** can be executed using the following command. This executed as many commands as the prediction horizon is long and then stops the robot to then give time to closly evaluate the predictions.
 
       ```bash
-      ./isaaclab.sh -p fdm_sub/scripts/test.py --runs <run-name>
+      <path-to-isaaclab-repo>/isaaclab.sh -p scripts/test.py --runs <run-name>
       ```
 
-      Given the argument `--paper-figure` generates Fig. **TODO** of the paper. Executing the script with `--paper-platform-figure` and varying the platforms using `--robot` argument generates Fig. **TODO**.
+      Given the argument `--paper-figure` generates Fig. 4 of the paper. Executing the script with `--paper-platform-figure` and varying the platforms using `--robot` argument generates Fig. 7.
 
       **IMPORTANT**: This script exports the policies to `jit` format and therefore has to be executed before the execution of the ROS code.
 
       A qualitative evaluation in **any environment** can be executed using the following command. Here longer trajectories are executed and the predictions are shown continuously along them.
 
       ```bash
-      ./isaaclab.sh -p fdm_sub/scripts/eval.py --runs <run-name> --terrain-cfg <terrain-name>
+      <path-to-isaaclab-repo>/isaaclab.sh -p scripts/eval.py --runs <run-name> --terrain-cfg <terrain-name>
       ```
 
       Possible terrain names are defined in the terrain config in [TerrainConfigs](exts/fdm/fdm/env_cfg/terrain_cfg.py).
@@ -279,7 +284,7 @@ To train the Forward Dynamics Model, follow these steps:
       A **quantitative** evaluation between the constant velocity assumption, the baseline method by Kim et al., and the developed method is executed with the following command:
 
       ```bash
-      ./isaaclab.sh -p fdm_sub/scripts/eval_metrics.py --runs <run-name>
+      <path-to-isaaclab-repo>/isaaclab.sh -p scripts/eval_metrics.py --runs <run-name>
       ```
 
    - **Real-World** evaluation
@@ -287,7 +292,7 @@ To train the Forward Dynamics Model, follow these steps:
       Evaluation on the real-world data is done by running:
 
       ```bash
-      ./isaaclab.sh -p fdm_sub/scripts/real_world_eval_metrics.py --runs <run-name>
+      <path-to-isaaclab-repo>/isaaclab.sh -p scripts/real_world_eval_metrics.py --runs <run-name>
       ```
 
 2. **Planning**
@@ -295,21 +300,21 @@ To train the Forward Dynamics Model, follow these steps:
    The planning evaluation is done by calling:
 
    ```bash
-   ./isaaclab.sh -p fdm_sub/scripts/plan_test.py --run <run-name>
+   <path-to-isaaclab-repo>/isaaclab.sh -p scripts/plan_test.py --run <run-name>
    ```
 
    The script runs with different modes:
    - `--mode test`: **qualitative** evaluation in a test environment
    - `--mode metric --env_type 2D`: **qualitative** evaluation in a 2D environment
    - `--mode metric --env_type 3D`: **qualitative** evaluation in a 3D environment
-   - `--mode plot`: generate the Fig. **TODO** of the paper
+   - `--mode plot`: generate the Fig. 9 of the paper
 
    The predicted paths and their rewards can be visualized using `--cost_show` argument.
 
    While this function uses pre-defined environments with start-goal pairs selected so that the planner has to overcome/ avoid certain obstacles, a evaluation with random start-goal pairs can be executed by running:
 
     ```bash
-   ./isaaclab.sh -p fdm_sub/scripts/plan_metric.py --run <run-name>
+   <path-to-isaaclab-repo>/isaaclab.sh -p scripts/plan_metric.py --run <run-name>
    ```
 
    As this involves many straight paths without significant obstacles, the `plan_test.py` script provide a more representative evaluation.

@@ -376,7 +376,7 @@ class RealWorldData:
                 # [0, 2]   twist commands  --> vx, vy, wz
                 twist_commands[twist_commands_idx, :3],
                 # [3, 5]   projected_gravity --> gx, gy, gz
-                math_utils.quat_rotate_inverse(
+                math_utils.quat_apply_inverse(
                     odometry[odometry_idx][:, [6, 3, 4, 5]], self.GRAVITY_VEC_W.repeat(len(odometry_idx), 1)
                 ),
                 # [6, 11]  state_estimator --> base_lin_vel (36:39), base_ang_vel (39:42)

@@ -201,7 +201,7 @@ class PreTrainingFDMDepthCfg(FDMDepthCfg):
         self.scene.target_height_scan = RayCasterCfg(
             prim_path="{ENV_REGEX_NS}/Robot/base",
             offset=RayCasterCfg.OffsetCfg(pos=(1.75, 0.0, 0.5)),
-            attach_yaw_only=True,
+            ray_alignment="yaw",
             pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=(4.5, 5.9)),
             debug_vis=True,
             mesh_prim_paths=["/World/ground"],

@@ -49,14 +49,15 @@ class FDMPlannerCfg:
     # configurations to load the previous runs
     experiment_name: str = "fdm_se2_prediction_depth"
     """Name of the experiment. """
+
     load_run: str = ".*"
     """The run directory to load. Default is ".*" (all).
 
     If regex expression, the latest (alphabetical order) matching run will be loaded.
     """
 
-    load_checkpoint: str = "model_.*.pt"
-    """The checkpoint file to load. Default is "model_.*.pt" (all).
+    load_checkpoint: str = "model.*.pt"
+    """The checkpoint file to load. Default is "model.*.pt" (all).
 
     If regex expression, the latest (alphabetical order) matching file will be loaded.
     """
@@ -107,7 +108,7 @@ class FDMPlannerCfg:
         # add planner command
         self.env_cfg.commands.command = mdp.GoalCommandCfg(
             resampling_time_range=(1000000.0, 1000000.0),  # only resample once at the beginning
-            infite_sampling=False,
+            sampling_mode="bounded",
             debug_vis=True,
             traj_sampling=TrajectorySamplingCfg(
                 terrain_analysis=fdm_env_cfg.TERRAIN_ANALYSIS_CFG,

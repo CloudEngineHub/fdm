@@ -17,7 +17,6 @@ from isaaclab_assets import ISAACLAB_ASSETS_DATA_DIR
 
 import nav_tasks.sensors as nav_patterns
 from nav_tasks import NAVSUITE_TASKS_DATA_DIR
-from nav_tasks.mdp.actions.navigation_actions_cfg import ISAAC_GYM_JOINT_NAMES
 
 import fdm.mdp as mdp
 
@@ -26,8 +25,15 @@ from .env_cfg_base import FDMCfg
 ##
 # Pre-defined configs
 ##
-from isaaclab_assets.robots.tytan import TYTAN_CFG  # isort: skip
-from isaaclab_assets.robots.aow import ANYMAL_C_ON_WHEELS_CFG  # isort: skip
+# NOTE: some policies and robot platforms are not publicly available
+try:
+    from nav_tasks.mdp.actions.navigation_actions_cfg import ISAAC_GYM_JOINT_NAMES  # isort: skip
+    from isaaclab_assets.robots.tytan import TYTAN_CFG  # isort: skip
+    from isaaclab_assets.robots.aow import ANYMAL_C_ON_WHEELS_CFG  # isort: skip
+except ImportError:
+    ISAAC_GYM_JOINT_NAMES = None  # isort: skip
+    TYTAN_CFG = None  # isort: skip
+    ANYMAL_C_ON_WHEELS_CFG = None  # isort: skip
 
 
 ###
@@ -35,68 +41,72 @@ from isaaclab_assets.robots.aow import ANYMAL_C_ON_WHEELS_CFG  # isort: skip
 ###
 
 
-@configclass
-class PerceptivePolicyCfg(ObsGroup):
-    """Observations for policy group."""
+# NOTE: some mdp functions are not publicly available yet
+if ISAAC_GYM_JOINT_NAMES is not None:
 
-    # Proprioception
-    wild_anymal = ObsTerm(
-        func=mdp.wild_anymal,
-        params={
-            "action_term": "velocity_cmd",
-            "asset_cfg": SceneEntityCfg(name="robot", joint_names=ISAAC_GYM_JOINT_NAMES, preserve_order=True),
-        },
-    )
-    # Exterocpetion
-    foot_scan_lf = ObsTerm(
-        func=mdp.height_scan_bounded,
-        params={"sensor_cfg": SceneEntityCfg("foot_scanner_lf"), "offset": 0.05},
-        scale=10.0,
-    )
-    foot_scan_rf = ObsTerm(
-        func=mdp.height_scan_bounded,
-        params={"sensor_cfg": SceneEntityCfg("foot_scanner_rf"), "offset": 0.05},
-        scale=10.0,
-    )
-    foot_scan_lh = ObsTerm(
-        func=mdp.height_scan_bounded,
-        params={"sensor_cfg": SceneEntityCfg("foot_scanner_lh"), "offset": 0.05},
-        scale=10.0,
-    )
-    foot_scan_rh = ObsTerm(
-        func=mdp.height_scan_bounded,
-        params={"sensor_cfg": SceneEntityCfg("foot_scanner_rh"), "offset": 0.05},
-        scale=10.0,
-    )
+    @configclass
+    class PerceptivePolicyCfg(ObsGroup):
+        """Observations for policy group."""
 
-    def __post_init__(self):
-        self.enable_corruption = False
-        self.concatenate_terms = True
+        # Proprioception
+        wild_anymal = ObsTerm(
+            func=mdp.wild_anymal,
+            params={
+                "action_term": "velocity_cmd",
+                "asset_cfg": SceneEntityCfg(name="robot", joint_names=ISAAC_GYM_JOINT_NAMES, preserve_order=True),
+            },
+        )
+        # Exterocpetion
+        foot_scan_lf = ObsTerm(
+            func=mdp.height_scan_bounded,
+            params={"sensor_cfg": SceneEntityCfg("foot_scanner_lf"), "offset": 0.05},
+            scale=10.0,
+        )
+        foot_scan_rf = ObsTerm(
+            func=mdp.height_scan_bounded,
+            params={"sensor_cfg": SceneEntityCfg("foot_scanner_rf"), "offset": 0.05},
+            scale=10.0,
+        )
+        foot_scan_lh = ObsTerm(
+            func=mdp.height_scan_bounded,
+            params={"sensor_cfg": SceneEntityCfg("foot_scanner_lh"), "offset": 0.05},
+            scale=10.0,
+        )
+        foot_scan_rh = ObsTerm(
+            func=mdp.height_scan_bounded,
+            params={"sensor_cfg": SceneEntityCfg("foot_scanner_rh"), "offset": 0.05},
+            scale=10.0,
+        )
 
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = True
 
-@configclass
-class ActionsCfg:
-    """Action specifications for the MDP."""
+    @configclass
+    class ActionsCfg:
+        """Action specifications for the MDP."""
 
-    velocity_cmd = mdp.PerceptiveNavigationSE2ActionCfg(
-        asset_name="robot",
-        low_level_action=mdp.JointPositionActionCfg(
-            asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=False
-        ),
-        low_level_decimation=4,
-        low_level_policy_file=os.path.join(NAVSUITE_TASKS_DATA_DIR, "Policies", "perceptive_locomotion_jit.pt"),
-        low_level_obs_group="policy",
-    )
+        velocity_cmd = mdp.PerceptiveNavigationSE2ActionCfg(
+            asset_name="robot",
+            low_level_action=mdp.JointPositionActionCfg(
+                asset_name="robot", joint_names=[".*"], scale=1.0, use_default_offset=False
+            ),
+            low_level_decimation=4,
+            low_level_policy_file=os.path.join(NAVSUITE_TASKS_DATA_DIR, "Policies", "perceptive_locomotion_jit.pt"),
+            low_level_obs_group="policy",
+        )
 
 
 def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
     """Apply changes to the FDM configuration for the ANYmal Perceptive environment."""
+    if ISAAC_GYM_JOINT_NAMES is None:
+        raise ImportError("Perceptive policy not publicly available yet. Check isaac-nav-suite for possible updates.")
     # change height scanner for the robot
     cfg.scene.height_scanner = None
     cfg.scene.foot_scanner_lf = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/LF_FOOT",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
@@ -106,7 +116,7 @@ def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
     cfg.scene.foot_scanner_rf = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/RF_FOOT",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
@@ -116,7 +126,7 @@ def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
     cfg.scene.foot_scanner_lh = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/LH_FOOT",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
@@ -126,7 +136,7 @@ def anymal_perceptive(cfg: FDMCfg) -> FDMCfg:
     cfg.scene.foot_scanner_rh = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/RH_FOOT",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
@@ -194,6 +204,12 @@ class TytanPolicyCfg(ObsGroup):
 
 def tytan_env(cfg: FDMCfg, quiet: bool = False) -> FDMCfg:
     """Apply changes to the FDM configuration for the Tytan environment."""
+
+    if TYTAN_CFG is None:
+        raise ImportError(
+            "Barry robot and policy not publicly available yet. Check isaac-nav-suite for possible updates."
+        )
+
     # change robot in the scene
     cfg.scene.robot = TYTAN_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
     # adapt the action config
@@ -298,6 +314,12 @@ class AoWPolicyCfg(ObsGroup):
 
 def aow_env(cfg: FDMCfg, env: str) -> FDMCfg:
     """Apply changes to the FDM configuration for the AOW environment."""
+
+    if ANYMAL_C_ON_WHEELS_CFG is None:
+        raise ImportError(
+            "AoW robot and policy not publicly available yet. Check isaac-nav-suite for possible updates."
+        )
+
     # change robot in the scene
     cfg.scene.robot = ANYMAL_C_ON_WHEELS_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
     cfg.scene.robot.spawn.articulation_props.enabled_self_collisions = False
@@ -305,7 +327,7 @@ def aow_env(cfg: FDMCfg, env: str) -> FDMCfg:
     cfg.scene.height_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=(1.6, 1.0), ordering="yx"),
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],

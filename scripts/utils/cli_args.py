@@ -27,7 +27,7 @@ def add_fdm_args(parser: argparse.ArgumentParser, default_num_envs: int = 2048):
     parser.add_argument(
         "--robot",
         type=str,
-        default="anymal_perceptive",
+        default="anymal",
         choices=["anymal", "anymal_perceptive", "aow", "tytan", "tytan_quiet"],
         help="Select the robot.",
     )

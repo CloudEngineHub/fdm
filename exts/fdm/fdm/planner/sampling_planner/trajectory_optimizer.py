@@ -12,14 +12,10 @@ import os
 import pickle
 import subprocess
 import torch
-import torch.nn.functional as F
 from scipy.spatial.distance import cdist
 from typing import TYPE_CHECKING
 
-from skimage.draw import line
-
 from isaaclab.envs import ManagerBasedRLEnv
-from isaaclab.utils.timer import Timer
 
 from nav_suite.terrain_analysis import TerrainAnalysis
 
@@ -306,8 +302,10 @@ class SimpleSE2TrajectoryOptimizer:
             # get initial states
             if self.env_ids == slice(None):
                 env_idx = torch.arange(BS)
+            elif isinstance(self.env_ids, torch.Tensor):
+                env_idx = torch.arange(self.env_ids.shape[0])
             else:
-                env_idx = self.env_ids if isinstance(self.env_ids, torch.Tensor) else torch.tensor(self.env_ids)
+                env_idx = torch.arange(len(self.env_ids))
 
             # init final output buffers
             num_envs = len(env_idx)
@@ -899,110 +897,6 @@ class SimpleSE2TrajectoryOptimizer:
             coordinates_filtered = coordinates_traj[path_filter[0]].reshape(-1, 2)
             cost_map[coordinates_filtered[:, 0], coordinates_filtered[:, 1]] = 1
             axs[2].imshow(cost_map.cpu().numpy())
-
-        return cost
-
-    def cost_map_cost_old(self, states: torch.Tensor, line_checking: bool = False) -> torch.Tensor:
-        """Cost based on cost map generated from the height scan
-
-        The cost-map is generated from the height-scan by applying the following heuristsics:
-        - any increase over 0.3m is not traversable
-        - TODO: going through non observable terrain
-
-        .. note::
-            NOT USED! Neural Network based cost map is used instead.
-
-        Args:
-            states: States of the sampled trajectories in local frame
-            line_checking: If True the cost is calculated by checking the line segments of the path on the height map
-                Problem: too slow. If False, just does a point wise check
-
-        Returns
-            cost: Cost of the applied filters for every path
-        """
-        with Timer("cost_map_cost: height map diff calculation"):
-            # get height-scan
-            height_scan = self.obs["extero_obs"][torch.arange(states.shape[0])].squeeze(1).to(self.device)
-            num_envs, grid_size_x, grid_size_y = height_scan.shape
-            # calc diff in both x and y
-            height_diff = torch.diff(
-                height_scan, dim=1, append=torch.zeros((num_envs, 1, grid_size_y), device=self.device)
-            ) + torch.diff(height_scan, dim=2, append=torch.zeros((num_envs, grid_size_x, 1), device=self.device))
-            height_diff = torch.abs(height_diff) > self.to_cfg.states_cost_w_cost_map_height_diff_thres
-
-            # Define the dilation kernel based on robot size (assumes a square kernel for simplicity)
-            robot_size = int(0.75 / self.height_scan_resolution)  # Adjust robot size here (kernel size)
-            dilation_kernel = torch.ones((1, 1, robot_size, robot_size), device=self.device)
-
-            # Add an extra dimension for batch compatibility with F.conv2d
-            height_diff = height_diff.unsqueeze(1).to(torch.float32)
-
-            # Perform dilation using 2D convolution, then convert back to boolean
-            height_diff = F.conv2d(height_diff, dilation_kernel, padding=robot_size // 2) > 0
-            height_diff = height_diff.squeeze(1).bool()  # Remove the extra dimension
-
-            if False:
-                import matplotlib.pyplot as plt
-
-                plt.imshow(height_diff[0, 0].cpu().numpy())
-                plt.savefig("/home/pascal/height_diff.png")
-                plt.close()
-
-        # get the indexes of the points of the path on the height-map
-        # NOTE: the height map is oriented with the robot x axis in the y direction of the height map and the robot y axis in the x direction of the height map
-        #       therefore the x and y axis are swapped
-        path_idx = torch.tensor(
-            [[
-                grid_size_x / 2 - self.height_scan_offset[1] / self.height_scan_resolution,
-                grid_size_y / 2 - self.height_scan_offset[0] / self.height_scan_resolution,
-            ]],
-            device=states.device,
-            dtype=torch.int32,
-        ) + (states[..., [1, 0]] / self.height_scan_resolution).to(torch.int32) * torch.tensor(
-            [-1, 1], device=states.device, dtype=torch.int32
-        )
-        # clip the idx to max indexes of the height map
-        path_idx[..., 0] = torch.clamp(path_idx[..., 0], 0, grid_size_x - 1)
-        path_idx[..., 1] = torch.clamp(path_idx[..., 1], 0, grid_size_y - 1)
-
-        if line_checking:
-            # line segment filter actually covers the entire path but too slow
-            with Timer("cost_map_cost: line segment checking"):
-                path_idx_start = path_idx[:, :, :-1].reshape(num_envs, -1, 2)
-                path_idx_end = path_idx[:, :, 1:].reshape(num_envs, -1, 2)
-
-                filter_idx = torch.zeros(path_idx_start.shape[:2], dtype=torch.bool)
-
-                for env_idx in range(num_envs):
-                    for idx, (edge_start_idx, edge_end_idx) in enumerate(
-                        zip(path_idx_start[env_idx], path_idx_end[env_idx])
-                    ):
-                        grid_idx_x, grid_idx_y = line(
-                            edge_start_idx[0], edge_start_idx[1], edge_end_idx[0], edge_end_idx[1]
-                        )
-
-                        filter_idx[env_idx, idx] = torch.any(height_diff[env_idx][grid_idx_x, grid_idx_y])
-
-                        # if env_idx == 0:
-                        #     height_diff_plot = height_diff[env_idx].clone()
-                        #     height_diff_plot[grid_idx_x, grid_idx_y] = 10
-                        #     plt.imshow(height_diff_plot.cpu().numpy())
-                        #     plt.savefig(f"/home/pascal/height_diff_traj_{idx}.png")
-                        #     plt.close()
-
-                # remove any path where parts of the way are going through a larger height diff
-                path_filter = torch.any(filter_idx.reshape(num_envs, states.shape[1], -1), dim=-1)
-        else:
-            # POINT WISE filter (less precise but faster)
-            path_idx_reshape = path_idx.reshape(-1, 2)
-            env_idx = torch.arange(num_envs, device=states.device)[:, None, None].repeat(1, *states.shape[1:3])
-            env_idx = env_idx.reshape(-1)
-            filter_idx = height_diff[env_idx, path_idx_reshape[..., 0], path_idx_reshape[..., 1]]
-            path_filter = torch.any(filter_idx.reshape(num_envs, states.shape[1], -1), dim=-1)
-
-        # filter paths
-        cost = torch.zeros(num_envs, states.shape[1], device=states.device)
-        cost[path_filter] += self.to_cfg.state_cost_w_fatal_trav
 
         return cost
 

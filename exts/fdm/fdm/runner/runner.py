@@ -255,6 +255,8 @@ class FDMRunner:
 
             if not os.path.isfile(eval_dataset_path):
                 self._collect(eval=False)
+                # make sure directory exists
+                os.makedirs(os.path.dirname(eval_dataset_path), exist_ok=True)
                 # save dataset
                 with open(eval_dataset_path, "wb") as eval_dataset:
                     pickle.dump(self.trainer.train_dataset, eval_dataset)

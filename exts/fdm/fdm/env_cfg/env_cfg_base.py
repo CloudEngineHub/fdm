@@ -20,7 +20,6 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import ContactSensorCfg, RayCasterCfg, patterns
 from isaaclab.utils import configclass
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
-from isaaclab_assets import ISAACLAB_ASSETS_DATA_DIR
 
 from nav_suite.terrains import NavTerrainImporterCfg
 
@@ -127,7 +126,7 @@ class TerrainSceneCfg(InteractiveSceneCfg):
     height_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5 m above the base for door assessment
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=(1.6, 1.0)),
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
@@ -168,7 +167,7 @@ class ActionsCfg:
             asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True
         ),
         low_level_decimation=4,
-        low_level_policy_file=os.path.join(ISAACLAB_ASSETS_DATA_DIR, "Policies", "ANYmal-D", "policy_new.pt"),
+        low_level_policy_file=f"{FDM_DATA_DIR}/ANYmal-D-New/policy.pt",
         low_level_obs_group="policy",
     )
 

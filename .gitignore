@@ -15,6 +15,9 @@ _isaac_lab
 # terrains and collected samples
 exts/fdm/data/Terrains/
 
+# possible logs
+**/logs/*
+
 # Python
 .DS_Store
 **/*.egg-info/

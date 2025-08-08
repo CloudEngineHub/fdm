@@ -24,7 +24,7 @@ parser.add_argument(
     "--runs",
     type=str,
     nargs="+",
-    default="Nov19_20-56-45_MergeSingleObjMazeTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_NOPreTrained_Bs2048_reducedObs_Occlusion_NoEarlyCollFilter_NoTorque",
+    default="fdm_latest",
     help="Name of the run.",
 )
 parser.add_argument("--equal-actions", action="store_true", default=False, help="Have the same actions for all envs.")

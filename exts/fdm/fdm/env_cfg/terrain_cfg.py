@@ -4,9 +4,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import os
+
 import isaaclab.terrains as terrain_gen
 
 import nav_tasks.terrains as fdm_terrain_gen
+
+from fdm import FDM_DATA_DIR
 
 from .terrains import RslStairsCfg
 
@@ -1017,6 +1021,7 @@ PAPER_PLANNER_FIGURE_TERRAIN_CFG = terrain_gen.TerrainGeneratorCfg(
             width_randomization=1.0,
             random_stairs_ramp_position_flipping=True,
             max_height=1.0,
+            random_state_file=os.path.join(FDM_DATA_DIR, "Terrains", "np_random_state_stairs_ramp.pkl"),
         ),
         "stairs_incline_back": fdm_terrain_gen.StairsRampTerrainCfg(
             modify_step_height=True,

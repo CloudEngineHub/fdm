@@ -23,11 +23,11 @@ parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
 parser.add_argument(
     "--mode",
     type=str,
-    default="debug",
+    default="train",
     choices=["train", "eval", "debug", "train-real-world"],
     help="Mode of the script.",
 )
-parser.add_argument("--run_name", type=str, default="local_4mLiDAR-2DEnv", help="Name of the run.")
+parser.add_argument("--run_name", type=str, default="fdm_train", help="Name of the run.")
 parser.add_argument("--resume", type=str, default=None, help="Resume from an experiment (provide the experiment name).")
 parser.add_argument("--regular", action="store_true", default=False, help="Spawn robots in a regular pattern.")
 # parser.add_argument("--runs", type=str, nargs="+", default="Oct25_13-04-59_MergeSingleObjTerrain_HeightScan_lr3e3_Ep8_CR20_AllOnceStructure_NonUniColl_ModPreTrained_Bs2048_DropOut_NoEarlyCollFilter", help="Name of the run.")
@@ -55,7 +55,7 @@ args_cli.headless = True
 
 if args_cli.mode == "debug":
     args_cli.headless = False
-    args_cli.num_envs = 2
+    args_cli.num_envs = 10
     args_cli.terrain_analysis_points = 5000
 elif args_cli.mode == "eval":
     args_cli.headless = True

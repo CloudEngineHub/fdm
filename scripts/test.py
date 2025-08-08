@@ -220,7 +220,7 @@ def main():
     # restrict goal generator to be purely goal-generated without any planner
     cfg.env_cfg.commands.command = mdp.GoalCommandCfg(
         resampling_time_range=(1000000.0, 1000000.0),  # only resample once at the beginning
-        infite_sampling=False,
+        sampling_mode="bounded",
         debug_vis=False,
         traj_sampling=TrajectorySamplingCfg(
             terrain_analysis=TERRAIN_ANALYSIS_CFG,

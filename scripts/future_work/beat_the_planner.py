@@ -129,7 +129,7 @@ def exchange_to_matterport_sensors(cfg: MatterportHeightTerrainSceneCfg) -> Matt
         offset=MatterportRayCasterCfg.OffsetCfg(
             pos=(1.75, 0.0, 0.5) if not LARGE_UNIFIED_HEIGHT_SCAN else (0.0, 0.0, 0.5)
         ),
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=patterns.GridPatternCfg(
             resolution=0.1, size=(4.5, 5.9) if not LARGE_UNIFIED_HEIGHT_SCAN else (7.9, 5.9)
         ),
@@ -144,7 +144,7 @@ def exchange_to_matterport_sensors(cfg: MatterportHeightTerrainSceneCfg) -> Matt
     cfg.foot_scanner_lf = MatterportRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/LF_FOOT",
         offset=MatterportRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
         mesh_prim_paths=[
@@ -156,7 +156,7 @@ def exchange_to_matterport_sensors(cfg: MatterportHeightTerrainSceneCfg) -> Matt
     cfg.foot_scanner_rf = MatterportRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/RF_FOOT",
         offset=MatterportRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
         mesh_prim_paths=[
@@ -168,7 +168,7 @@ def exchange_to_matterport_sensors(cfg: MatterportHeightTerrainSceneCfg) -> Matt
     cfg.foot_scanner_lh = MatterportRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/LH_FOOT",
         offset=MatterportRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
         mesh_prim_paths=[
@@ -180,7 +180,7 @@ def exchange_to_matterport_sensors(cfg: MatterportHeightTerrainSceneCfg) -> Matt
     cfg.foot_scanner_rh = MatterportRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/RH_FOOT",
         offset=MatterportRayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.5)),  # 0.5m to allow for doors
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=nav_patterns.FootScanPatternCfg(),
         debug_vis=False,
         mesh_prim_paths=[

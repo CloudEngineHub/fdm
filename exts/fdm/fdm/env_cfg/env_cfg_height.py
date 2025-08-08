@@ -28,7 +28,7 @@ def modify_scene_cfg(scene_cfg: TerrainSceneCfg):
     scene_cfg.env_sensor = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
         offset=RayCasterCfg.OffsetCfg(pos=(1.75, 0.0, 4.0) if not LARGE_UNIFIED_HEIGHT_SCAN else (0.0, 0.0, 4.0)),
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=patterns.GridPatternCfg(
             resolution=0.1, size=(4.5, 5.9) if not LARGE_UNIFIED_HEIGHT_SCAN else (7.9, 5.9)
         ),
@@ -55,8 +55,8 @@ class HeightTerrainSceneCfg(TerrainSceneCfg):
 class ObsExteroceptiveCfg(ObsGroup):
     # collect depth cameras
     env_sensor = ObsTerm(
-        func=mdp.height_scan_door_recognition,
-        # func=mdp.height_scan_square_exp_occlu_with_door_recognition,
+        func=mdp.height_scan_door_recognition_fdm,
+        # func=mdp.height_scan_square_fdm_exp_occlu_with_door_recognition,
         params={
             "sensor_cfg": SceneEntityCfg("env_sensor"),
             "shape": (60, 46) if not LARGE_UNIFIED_HEIGHT_SCAN else (60, 80),
@@ -76,7 +76,7 @@ class OccludedObsExteroceptiveCfg(ObsGroup):
     env_sensor = ObsTerm(
         func=mdp.HeightScanOcculusionDoorRecognitionModifier(
             mdp.HeightScanOcculusionModifierCfg(
-                height_scan_func=mdp.height_scan_square,
+                height_scan_func=mdp.height_scan_square_fdm,
                 asset_cfg=SceneEntityCfg("robot"),
                 sensor_cfg=SceneEntityCfg("env_sensor"),
                 env_ratio=0.5,
@@ -85,7 +85,7 @@ class OccludedObsExteroceptiveCfg(ObsGroup):
         ),
         # func=mdp.HeightScanOcculusionModifier(
         #     mdp.HeightScanOcculusionModifierCfg(
-        #         height_scan_func=mdp.height_scan_square,
+        #         height_scan_func=mdp.height_scan_square_fdm,
         #         asset_cfg=SceneEntityCfg("robot"),
         #         sensor_cfg=SceneEntityCfg("env_sensor"),
         #         env_ratio=0.5,
