@@ -106,6 +106,8 @@ class DepthTerrainSceneCfg(TerrainSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
 
     def __post_init__(self):
+        super().__post_init__()
+
         modify_scene_cfg(self)
 
 

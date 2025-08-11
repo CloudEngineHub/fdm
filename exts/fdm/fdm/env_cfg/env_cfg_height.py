@@ -43,6 +43,8 @@ class HeightTerrainSceneCfg(TerrainSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
 
     def __post_init__(self):
+        super().__post_init__()
+        # change height scan
         modify_scene_cfg(self)
 
 

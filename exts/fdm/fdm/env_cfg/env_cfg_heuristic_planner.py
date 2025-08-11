@@ -35,6 +35,9 @@ class HeuristicsHeightTerrainSceneCfg(TerrainSceneCfg):
         max_distance=10.0,
     )
 
+    def __post_init__(self):
+        super().__post_init__()
+
 
 ##
 # MDP settings

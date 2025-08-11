@@ -121,6 +121,9 @@ class MatterportHeightTerrainSceneCfg(HeightTerrainSceneCfg):
         init_state=AssetBaseCfg.InitialStateCfg(pos=(8.0, -12, 2.0)),
     )
 
+    def __post_init__(self):
+        super().__post_init__()
+
 
 def exchange_to_matterport_sensors(cfg: MatterportHeightTerrainSceneCfg) -> MatterportHeightTerrainSceneCfg:
     # raycaster for the planner
